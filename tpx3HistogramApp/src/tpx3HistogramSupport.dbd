@@ -1,0 +1,8 @@
+# Database definition file for Timepix3 Histogram IOC
+# This file defines the database records and their relationships
+
+# Driver registration
+registrar(register_func_tpx3HistogramConfigure)
+
+# Function registration
+function(tpx3HistogramConfigure)
