@@ -39,3 +39,12 @@
 
 # debug information files
 *.dwo
+
+# EPICS build files
+dbd/
+db/
+bin/
+O.Common/
+O.linux-x86_64/
+envPaths
+
