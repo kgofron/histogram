@@ -1,22 +1,14 @@
 # Timepix3 Histogram Database
-# This database defines the records for controlling and monitoring the Timepix3 histogram
+# This file defines the EPICS records for the Timepix3 histogram IOC
 
 # Connection control records
-record(bo, "$(P)$(R)CONNECT") {
-    field(DESC, "Connect to Timepix3 server")
+record(bo, "$(P)$(R)CONNECTION_STATE") {
+    field(DESC, "Connect/Disconnect")
     field(DTYP, "Soft Channel")
     field(OUT, "0")
     field(ZNAM, "Disconnected")
     field(ONAM, "Connected")
     field(FLNK, "$(P)$(R)CONNECTED")
-}
-
-record(bo, "$(P)$(R)DISCONNECT") {
-    field(DESC, "Disconnect from Timepix3 server")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
-    field(ZNAM, "Disconnected")
-    field(ONAM, "Disconnected")
 }
 
 record(bi, "$(P)$(R)CONNECTED") {
@@ -25,22 +17,6 @@ record(bi, "$(P)$(R)CONNECTED") {
     field(INP, "0")
     field(ZNAM, "Disconnected")
     field(ONAM, "Connected")
-    field(SCAN, "1 second")
-}
-
-# Configuration records
-record(stringout, "$(P)$(R)HOST") {
-    field(DESC, "Timepix3 server hostname/IP")
-    field(DTYP, "Soft Channel")
-    field(OUT, "127.0.0.1")
-    field(VAL, "127.0.0.1")
-}
-
-record(longout, "$(P)$(R)PORT") {
-    field(DESC, "Timepix3 server port")
-    field(DTYP, "Soft Channel")
-    field(OUT, "8451")
-    field(VAL, "8451")
 }
 
 # Control records
@@ -52,110 +28,15 @@ record(bo, "$(P)$(R)RESET") {
     field(ONAM, "Reset")
 }
 
-record(bo, "$(P)$(R)START") {
-    field(DESC, "Start histogram acquisition")
+record(bo, "$(P)$(R)ACQUISITION_STATE") {
+    field(DESC, "Start/Stop")
     field(DTYP, "Soft Channel")
     field(OUT, "0")
     field(ZNAM, "Stopped")
     field(ONAM, "Running")
 }
 
-record(bo, "$(P)$(R)STOP") {
-    field(DESC, "Stop histogram acquisition")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
-    field(ZNAM, "Stopped")
-    field(ONAM, "Stopped")
-}
-
 # Status and data records
-record(longin, "$(P)$(R)FRAME_COUNT") {
-    field(DESC, "Total frames processed")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)TOTAL_COUNTS") {
-    field(DESC, "Total counts accumulated")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(ai, "$(P)$(R)ACQUISITION_RATE") {
-    field(DESC, "Frames per second")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-    field(PREC, "2")
-    field(EGU, "Hz")
-}
-
-# Histogram bin records (first 100 bins for monitoring)
-record(longin, "$(P)$(R)BIN_0") {
-    field(DESC, "Bin 0 count")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)BIN_1") {
-    field(DESC, "Bin 1 count")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)BIN_2") {
-    field(DESC, "Bin 2 count")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)BIN_3") {
-    field(DESC, "Bin 3 count")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)BIN_4") {
-    field(DESC, "Bin 4 count")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-}
-
-# Waveform record for full histogram data
-record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
-    field(DESC, "Full histogram data")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(FTVL, "ULONG")
-    field(NELM, "1000")
-    field(SCAN, "1 second")
-}
-
-# Time information
-record(ai, "$(P)$(R)BIN_WIDTH_PS") {
-    field(DESC, "Bin width in picoseconds")
-    field(DTYP, "Soft Channel")
-    field(INP, "0.260")
-    field(PREC, "3")
-    field(EGU, "ps")
-}
-
-record(ai, "$(P)$(R)TOTAL_TIME_NS") {
-    field(DESC, "Total time range in nanoseconds")
-    field(DTYP, "Soft Channel")
-    field(INP, "260.0")
-    field(PREC, "1")
-    field(EGU, "ns")
-}
-
-# File output control
 record(bo, "$(P)$(R)SAVE_DATA") {
     field(DESC, "Save histogram data to file")
     field(DTYP, "Soft Channel")
@@ -164,43 +45,128 @@ record(bo, "$(P)$(R)SAVE_DATA") {
     field(ONAM, "Save")
 }
 
-record(stringout, "$(P)$(R)FILENAME") {
-    field(DESC, "Output filename")
+record(stringin, "$(P)$(R)HOST") {
+    field(DESC, "Timepix3 server hostname/IP")
     field(DTYP, "Soft Channel")
-    field(OUT, "tpx3_histogram.txt")
-    field(VAL, "tpx3_histogram.txt")
+    field(INP, "127.0.0.1")
 }
 
-# Error and status records
+record(ai, "$(P)$(R)PORT") {
+    field(DESC, "Timepix3 server port")
+    field(DTYP, "Soft Channel")
+    field(INP, "8451")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)FRAME_COUNT") {
+    field(DESC, "Total frames processed")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)TOTAL_COUNTS") {
+    field(DESC, "Total counts in histogram")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
 record(stringin, "$(P)$(R)STATUS") {
-    field(DESC, "Device status message")
+    field(DESC, "Current status message")
     field(DTYP, "Soft Channel")
     field(INP, "Initialized")
-    field(SCAN, "1 second")
 }
 
-record(longin, "$(P)$(R)ERROR_COUNT") {
-    field(DESC, "Error count")
+record(ai, "$(P)$(R)ERROR_COUNT") {
+    field(DESC, "Number of errors encountered")
     field(DTYP, "Soft Channel")
     field(INP, "0")
-    field(SCAN, "1 second")
+    field(PREC, "0")
 }
 
-# Performance monitoring
+record(ai, "$(P)$(R)ACQUISITION_RATE") {
+    field(DESC, "Frames per second")
+    field(DTYP, "Soft Channel")
+    field(INP, "0.0")
+    field(PREC, "3")
+}
+
 record(ai, "$(P)$(R)PROCESSING_TIME_MS") {
-    field(DESC, "Average frame processing time")
+    field(DESC, "Processing time in milliseconds")
     field(DTYP, "Soft Channel")
-    field(INP, "0")
-    field(SCAN, "1 second")
-    field(PREC, "2")
-    field(EGU, "ms")
+    field(INP, "0.0")
+    field(PREC, "3")
 }
 
 record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
     field(DESC, "Memory usage in MB")
     field(DTYP, "Soft Channel")
+    field(INP, "0.0")
+    field(PREC, "3")
+}
+
+record(ai, "$(P)$(R)BIN_WIDTH_PS") {
+    field(DESC, "Bin width in picoseconds")
+    field(DTYP, "Soft Channel")
+    field(INP, "0.260")
+    field(PREC, "3")
+}
+
+record(ai, "$(P)$(R)TOTAL_TIME_NS") {
+    field(DESC, "Total time range in nanoseconds")
+    field(DTYP, "Soft Channel")
+    field(INP, "260.0")
+    field(PREC, "3")
+}
+
+record(stringin, "$(P)$(R)FILENAME") {
+    field(DESC, "Filename for saving data")
+    field(DTYP, "Soft Channel")
+    field(INP, "histogram_data.txt")
+}
+
+# Histogram bin records (first 5 bins for display)
+record(ai, "$(P)$(R)BIN_0") {
+    field(DESC, "Histogram bin 0 value")
+    field(DTYP, "Soft Channel")
     field(INP, "0")
-    field(SCAN, "5 second")
-    field(PREC, "1")
-    field(EGU, "MB")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)BIN_1") {
+    field(DESC, "Histogram bin 1 value")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)BIN_2") {
+    field(DESC, "Histogram bin 2 value")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)BIN_3") {
+    field(DESC, "Histogram bin 3 value")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)BIN_4") {
+    field(DESC, "Histogram bin 4 value")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(PREC, "0")
+}
+
+# Full histogram data array
+record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
+    field(DESC, "Full histogram data array (1000 bins)")
+    field(DTYP, "Soft Channel")
+    field(INP, "0")
+    field(FTVL, "LONG")
+    field(NELM, "1000")
 }

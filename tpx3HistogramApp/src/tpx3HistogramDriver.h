@@ -42,11 +42,9 @@ public:
 
 private:
     // Parameter indices
-    int connectIndex_;
-    int disconnectIndex_;
+    int connectionStateIndex_;
     int resetIndex_;
-    int startIndex_;
-    int stopIndex_;
+    int acquisitionStateIndex_;
     int saveDataIndex_;
     int hostIndex_;
     int portIndex_;

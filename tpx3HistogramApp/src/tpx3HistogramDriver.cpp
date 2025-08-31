@@ -48,33 +48,29 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     status_ = "Initialized";
     
     // Create parameter indices
-    connectIndex_ = 0;
-    disconnectIndex_ = 1;
-    resetIndex_ = 2;
-    startIndex_ = 3;
-    stopIndex_ = 4;
-    saveDataIndex_ = 5;
-    hostIndex_ = 6;
-    portIndex_ = 7;
-    frameCountIndex_ = 8;
-    totalCountsIndex_ = 9;
-    connectedIndex_ = 10;
-    statusIndex_ = 11;
-    errorCountIndex_ = 12;
-    acquisitionRateIndex_ = 13;
-    processingTimeIndex_ = 14;
-    memoryUsageIndex_ = 15;
-    binWidthIndex_ = 16;
-    totalTimeIndex_ = 17;
-    filenameIndex_ = 18;
-    histogramDataIndex_ = 19;
+    connectionStateIndex_ = 0;
+    resetIndex_ = 1;
+    acquisitionStateIndex_ = 2;
+    saveDataIndex_ = 3;
+    hostIndex_ = 4;
+    portIndex_ = 5;
+    frameCountIndex_ = 6;
+    totalCountsIndex_ = 7;
+    connectedIndex_ = 8;
+    statusIndex_ = 9;
+    errorCountIndex_ = 10;
+    acquisitionRateIndex_ = 11;
+    processingTimeIndex_ = 12;
+    memoryUsageIndex_ = 13;
+    binWidthIndex_ = 14;
+    totalTimeIndex_ = 15;
+    filenameIndex_ = 16;
+    histogramDataIndex_ = 17;
     
     // Create parameters
-    createParam("CONNECT", asynParamInt32, &connectIndex_);
-    createParam("DISCONNECT", asynParamInt32, &disconnectIndex_);
+    createParam("CONNECTION_STATE", asynParamInt32, &connectionStateIndex_);
     createParam("RESET", asynParamInt32, &resetIndex_);
-    createParam("START", asynParamInt32, &startIndex_);
-    createParam("STOP", asynParamInt32, &stopIndex_);
+    createParam("ACQUISITION_STATE", asynParamInt32, &acquisitionStateIndex_);
     createParam("SAVE_DATA", asynParamInt32, &saveDataIndex_);
     createParam("HOST", asynParamOctet, &hostIndex_);
     createParam("PORT", asynParamInt32, &portIndex_);
@@ -139,24 +135,20 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
     
-    if (function == connectIndex_) {
+    if (function == connectionStateIndex_) {
         if (value == 1) {
             connect();
-        }
-    } else if (function == disconnectIndex_) {
-        if (value == 1) {
+        } else if (value == 0) {
             disconnect();
         }
     } else if (function == resetIndex_) {
         if (value == 1) {
             reset();
         }
-    } else if (function == startIndex_) {
+    } else if (function == acquisitionStateIndex_) {
         if (value == 1) {
             start();
-        }
-    } else if (function == stopIndex_) {
-        if (value == 1) {
+        } else if (value == 0) {
             stop();
         }
     } else if (function == saveDataIndex_) {
