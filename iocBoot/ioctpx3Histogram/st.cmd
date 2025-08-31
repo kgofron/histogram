@@ -3,6 +3,8 @@
 # Timepix3 Histogram IOC Startup Script
 # This script initializes and starts the Timepix3 histogram IOC
 
+< envPaths
+
 # Set the IOC name
 epicsEnvSet("IOC", "ioctpx3Histogram")
 epicsEnvSet("Sys", "TPX3-TEST:")
