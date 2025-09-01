@@ -4,17 +4,17 @@
 # Connection control records
 record(bo, "$(P)$(R)CONNECTION_STATE") {
     field(DESC, "Connect/Disconnect")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))CONNECTION_STATE")
     field(ZNAM, "Disconnected")
     field(ONAM, "Connected")
     field(FLNK, "$(P)$(R)CONNECTED")
 }
 
-record(bo, "$(P)$(R)CONNECTED") {
+record(bi, "$(P)$(R)CONNECTED") {
     field(DESC, "Connection status")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))CONNECTED")
     field(ZNAM, "Disconnected")
     field(ONAM, "Connected")
 }
@@ -22,16 +22,16 @@ record(bo, "$(P)$(R)CONNECTED") {
 # Control records
 record(bo, "$(P)$(R)RESET") {
     field(DESC, "Reset histogram data")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))RESET")
     field(ZNAM, "Reset")
     field(ONAM, "Reset")
 }
 
 record(bo, "$(P)$(R)ACQUISITION_STATE") {
     field(DESC, "Start/Stop")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))ACQUISITION_STATE")
     field(ZNAM, "Stopped")
     field(ONAM, "Running")
 }
@@ -39,91 +39,91 @@ record(bo, "$(P)$(R)ACQUISITION_STATE") {
 # Status and data records
 record(bo, "$(P)$(R)SAVE_DATA") {
     field(DESC, "Save histogram data to file")
-    field(DTYP, "Soft Channel")
-    field(OUT, "0")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))SAVE_DATA")
     field(ZNAM, "Save")
     field(ONAM, "Save")
 }
 
 record(stringin, "$(P)$(R)HOST") {
     field(DESC, "Timepix3 server hostname/IP")
-    field(DTYP, "Soft Channel")
-    field(INP, "127.0.0.1")
+    field(DTYP, "asynOctetRead")
+    field(INP, "@asyn($(PORT) $(ADDR))HOST")
 }
 
 record(ai, "$(P)$(R)PORT") {
     field(DESC, "Timepix3 server port")
-    field(DTYP, "Soft Channel")
-    field(INP, "8451")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))PORT")
     field(PREC, "0")
 }
 
 record(ai, "$(P)$(R)FRAME_COUNT") {
     field(DESC, "Total frames processed")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))FRAME_COUNT")
     field(PREC, "0")
 }
 
 record(ai, "$(P)$(R)TOTAL_COUNTS") {
     field(DESC, "Total counts in histogram")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))TOTAL_COUNTS")
     field(PREC, "0")
 }
 
-record(stringin, "$(P)$(R)STATUS") {
+record(stringout, "$(P)$(R)STATUS") {
     field(DESC, "Current status message")
-    field(DTYP, "Soft Channel")
-    field(INP, "Initialized")
+    field(DTYP, "asynOctetWrite")
+    field(OUT, "@asyn($(PORT) $(ADDR))STATUS")
 }
 
 record(ai, "$(P)$(R)ERROR_COUNT") {
     field(DESC, "Number of errors encountered")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))ERROR_COUNT")
     field(PREC, "0")
 }
 
 record(ai, "$(P)$(R)ACQUISITION_RATE") {
     field(DESC, "Frames per second")
-    field(DTYP, "Soft Channel")
-    field(INP, "0.0")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))ACQUISITION_RATE")
     field(PREC, "3")
 }
 
 record(ai, "$(P)$(R)PROCESSING_TIME_MS") {
     field(DESC, "Processing time in milliseconds")
-    field(DTYP, "Soft Channel")
-    field(INP, "0.0")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))PROCESSING_TIME")
     field(PREC, "3")
 }
 
 record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
     field(DESC, "Memory usage in MB")
-    field(DTYP, "Soft Channel")
-    field(INP, "0.0")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))MEMORY_USAGE")
     field(PREC, "3")
 }
 
 record(ai, "$(P)$(R)BIN_WIDTH_PS") {
     field(DESC, "Bin width in picoseconds")
-    field(DTYP, "Soft Channel")
-    field(INP, "0.260")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_WIDTH")
     field(PREC, "3")
 }
 
 record(ai, "$(P)$(R)TOTAL_TIME_NS") {
     field(DESC, "Total time range in nanoseconds")
-    field(DTYP, "Soft Channel")
-    field(INP, "260.0")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))TOTAL_TIME")
     field(PREC, "3")
 }
 
 record(stringin, "$(P)$(R)FILENAME") {
     field(DESC, "Filename for saving data")
-    field(DTYP, "Soft Channel")
-    field(INP, "histogram_data.txt")
+    field(DTYP, "asynOctetRead")
+    field(INP, "@asyn($(PORT) $(ADDR))FILENAME")
 }
 
 # Histogram bin records (first 5 bins for display)
@@ -165,8 +165,8 @@ record(ai, "$(P)$(R)BIN_4") {
 # Full histogram data array
 record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
     field(DESC, "Full histogram data array (1000 bins)")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32ArrayIn")
+    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_DATA")
     field(FTVL, "LONG")
     field(NELM, "1000")
 }

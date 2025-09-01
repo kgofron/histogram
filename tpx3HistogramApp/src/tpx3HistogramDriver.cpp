@@ -302,8 +302,8 @@ std::string createStatusMessage(const std::string& baseMessage, const std::strin
 // Constructor
 tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     : asynPortDriver(portName, maxAddr, NUM_PARAMS,
-                     asynInt32Mask | asynOctetMask | asynDrvUserMask,
-                     asynInt32Mask | asynOctetMask | asynDrvUserMask,
+                     asynInt32Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynDrvUserMask,
+                     asynInt32Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynDrvUserMask,
                      ASYN_CANBLOCK, 1, 0, 0),
       host_(DEFAULT_HOST),
       port_(DEFAULT_PORT),
@@ -447,6 +447,7 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
     } else if (function == portIndex_) {
         port_ = value;
         setIntegerParam(portIndex_, value);
+        printf("Port set to %d\n", value);
     } else {
         status = asynPortDriver::writeInt32(pasynUser, value);
     }
@@ -463,6 +464,7 @@ asynStatus tpx3HistogramDriver::writeOctet(asynUser *pasynUser, const char *valu
     if (function == hostIndex_) {
         host_ = std::string(value, maxChars);
         setStringParam(hostIndex_, value);
+        printf("Host set to %s\n", host_.c_str());
     } else if (function == filenameIndex_) {
         setStringParam(filenameIndex_, value);
     } else {
@@ -487,6 +489,8 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = static_cast<epicsInt32>(total_counts_);
     } else if (function == errorCountIndex_) {
         *value = error_count_;
+    } else if (function == portIndex_) {
+        *value = port_;
     } else {
         status = asynPortDriver::readInt32(pasynUser, value);
     }
@@ -500,11 +504,81 @@ asynStatus tpx3HistogramDriver::readOctet(asynUser *pasynUser, char *value, size
     asynStatus status = asynSuccess;
     
     if (function == statusIndex_) {
+        printf("readOctet: STATUS requested, current status: '%s'\n", status_.c_str());
         strncpy(value, status_.c_str(), maxChars);
         *nActual = std::min(status_.length(), maxChars);
         *eomReason = ASYN_EOM_END;
+    } else if (function == hostIndex_) {
+        strncpy(value, host_.c_str(), maxChars);
+        *nActual = std::min(host_.length(), maxChars);
+        *eomReason = ASYN_EOM_END;
+    } else if (function == filenameIndex_) {
+        char filename[256];
+        getStringParam(filenameIndex_, sizeof(filename), filename);
+        strncpy(value, filename, maxChars);
+        *nActual = std::min(strlen(filename), maxChars);
+        *eomReason = ASYN_EOM_END;
     } else {
         status = asynPortDriver::readOctet(pasynUser, value, maxChars, nActual, eomReason);
+    }
+    
+    return status;
+}
+
+asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
+{
+    int function = pasynUser->reason;
+    asynStatus status = asynSuccess;
+    
+    if (function == acquisitionRateIndex_) {
+        *value = acquisition_rate_;
+    } else if (function == processingTimeIndex_) {
+        *value = processing_time_;
+    } else if (function == memoryUsageIndex_) {
+        *value = memory_usage_;
+    } else if (function == binWidthIndex_) {
+        *value = 0.260; // 0.260 ps per bin
+    } else if (function == totalTimeIndex_) {
+        *value = 260.0; // 260 ns total time
+    } else {
+        status = asynPortDriver::readFloat64(pasynUser, value);
+    }
+    
+    return status;
+}
+
+asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *value, size_t nElements, size_t *nIn)
+{
+    int function = pasynUser->reason;
+    asynStatus status = asynSuccess;
+    
+    if (function == histogramDataIndex_) {
+        epicsMutexLock(mutex_);
+        
+        if (running_sum_) {
+            size_t elements_to_copy = std::min(nElements, running_sum_->get_bin_size());
+            for (size_t i = 0; i < elements_to_copy; ++i) {
+                if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                    // Convert 64-bit to 32-bit (with overflow protection)
+                    uint64_t val64 = running_sum_->get_bin_value_64(i);
+                    value[i] = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
+                } else {
+                    value[i] = static_cast<epicsInt32>(running_sum_->get_bin_value_32(i));
+                }
+            }
+            *nIn = elements_to_copy;
+        } else {
+            // No data yet, return zeros
+            size_t elements_to_zero = std::min(nElements, static_cast<size_t>(MAX_BINS));
+            for (size_t i = 0; i < elements_to_zero; ++i) {
+                value[i] = 0;
+            }
+            *nIn = elements_to_zero;
+        }
+        
+        epicsMutexUnlock(mutex_);
+    } else {
+        status = asynPortDriver::readInt32Array(pasynUser, value, nElements, nIn);
     }
     
     return status;
@@ -525,6 +599,7 @@ void tpx3HistogramDriver::connect()
             status_ = createStatusMessage("Connected successfully", host_, port_);
             setIntegerParam(connectedIndex_, 1);
             setStringParam(statusIndex_, status_.c_str());
+            printf("Updated STATUS to: '%s'\n", status_.c_str());
             printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
         } else {
             status_ = createStatusMessage("Connection failed", host_, port_, 0, 0, ++error_count_);
