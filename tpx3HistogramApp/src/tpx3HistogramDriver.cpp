@@ -599,11 +599,13 @@ void tpx3HistogramDriver::connect()
             status_ = createStatusMessage("Connected successfully", host_, port_);
             setIntegerParam(connectedIndex_, 1);
             setStringParam(statusIndex_, status_.c_str());
+            callParamCallbacks(statusIndex_);
             printf("Updated STATUS to: '%s'\n", status_.c_str());
             printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
         } else {
             status_ = createStatusMessage("Connection failed", host_, port_, 0, 0, ++error_count_);
             setStringParam(statusIndex_, status_.c_str());
+            callParamCallbacks(statusIndex_);
             setIntegerParam(errorCountIndex_, error_count_);
             printf("Failed to connect to Timepix3 server at %s:%d\n", host_.c_str(), port_);
         }
@@ -627,6 +629,7 @@ void tpx3HistogramDriver::disconnect()
         status_ = createStatusMessage("Disconnected from server", host_, port_, frame_count_, total_counts_);
         setIntegerParam(connectedIndex_, 0);
         setStringParam(statusIndex_, status_.c_str());
+        callParamCallbacks(statusIndex_);
         printf("Disconnected from Timepix3 server\n");
     }
     

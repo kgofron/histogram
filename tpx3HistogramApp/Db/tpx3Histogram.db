@@ -72,10 +72,11 @@ record(ai, "$(P)$(R)TOTAL_COUNTS") {
     field(PREC, "0")
 }
 
-record(stringout, "$(P)$(R)STATUS") {
+record(stringin, "$(P)$(R)STATUS") {
     field(DESC, "Current status message")
-    field(DTYP, "asynOctetWrite")
-    field(OUT, "@asyn($(PORT) $(ADDR))STATUS")
+    field(DTYP, "asynOctetRead")
+    field(INP, "@asyn($(PORT) $(ADDR))STATUS")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)ERROR_COUNT") {
