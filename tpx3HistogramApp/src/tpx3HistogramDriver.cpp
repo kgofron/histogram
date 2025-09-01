@@ -13,6 +13,7 @@
 #include <thread>
 #include <algorithm>
 #include <filesystem>
+#include <ctime>
 
 // HistogramData class implementation
 HistogramData::HistogramData(size_t bin_size, DataType type)
@@ -267,6 +268,37 @@ bool NetworkClient::receive_exact(char* buffer, size_t size) {
 // Global driver instance
 static tpx3HistogramDriver* g_driver = NULL;
 
+// Helper function to create detailed status messages
+std::string createStatusMessage(const std::string& baseMessage, const std::string& host = "", int port = 0, uint64_t frameCount = 0, uint64_t totalCounts = 0, int errorCount = 0) {
+    std::string status = baseMessage;
+    
+    // Add timestamp
+    time_t now = time(0);
+    char timeStr[64];
+    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", localtime(&now));
+    status += " [" + std::string(timeStr) + "]";
+    
+    // Add connection info if provided
+    if (!host.empty() && port > 0) {
+        status += " - " + host + ":" + std::to_string(port);
+    }
+    
+    // Add frame/count info if provided
+    if (frameCount > 0 || totalCounts > 0) {
+        status += " - Frames: " + std::to_string(frameCount);
+        if (totalCounts > 0) {
+            status += ", Counts: " + std::to_string(totalCounts);
+        }
+    }
+    
+    // Add error info if provided
+    if (errorCount > 0) {
+        status += " - Errors: " + std::to_string(errorCount);
+    }
+    
+    return status;
+}
+
 // Constructor
 tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     : asynPortDriver(portName, maxAddr, NUM_PARAMS,
@@ -298,7 +330,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     dataReady_ = epicsEventCreate(epicsEventEmpty);
     
     // Initialize status
-    status_ = "Initialized";
+    status_ = "Initialized - Ready to connect";
     
     // Create parameter indices
     connectionStateIndex_ = 0;
@@ -351,7 +383,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(memoryUsageIndex_, 0.0);
     setDoubleParam(binWidthIndex_, 0.260);
     setDoubleParam(totalTimeIndex_, 260.0);
-    setStringParam(statusIndex_, "Initialized");
+    setStringParam(statusIndex_, "Initialized - Ready to connect");
     
     // Start monitor thread
     monitorThreadId_ = epicsThreadCreate("tpx3HistogramMonitor",
@@ -484,15 +516,20 @@ void tpx3HistogramDriver::connect()
     epicsMutexLock(mutex_);
     
     if (!connected_) {
+        status_ = createStatusMessage("Connecting to server", host_, port_);
+        setStringParam(statusIndex_, status_.c_str());
+        callParamCallbacks();
+        
         if (network_client_->connect(host_, port_)) {
             connected_ = true;
-            status_ = "Connected";
+            status_ = createStatusMessage("Connected successfully", host_, port_);
             setIntegerParam(connectedIndex_, 1);
             setStringParam(statusIndex_, status_.c_str());
             printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
         } else {
-            status_ = "Connection failed";
+            status_ = createStatusMessage("Connection failed", host_, port_, 0, 0, ++error_count_);
             setStringParam(statusIndex_, status_.c_str());
+            setIntegerParam(errorCountIndex_, error_count_);
             printf("Failed to connect to Timepix3 server at %s:%d\n", host_.c_str(), port_);
         }
     }
@@ -512,7 +549,7 @@ void tpx3HistogramDriver::disconnect()
         
         network_client_->disconnect();
         connected_ = false;
-        status_ = "Disconnected";
+        status_ = createStatusMessage("Disconnected from server", host_, port_, frame_count_, total_counts_);
         setIntegerParam(connectedIndex_, 0);
         setStringParam(statusIndex_, status_.c_str());
         printf("Disconnected from Timepix3 server\n");
@@ -533,7 +570,7 @@ void tpx3HistogramDriver::reset()
     
     setIntegerParam(frameCountIndex_, 0);
     setIntegerParam(totalCountsIndex_, 0);
-    status_ = "Reset";
+    status_ = createStatusMessage("Histogram data reset", host_, port_, 0, 0, error_count_);
     setStringParam(statusIndex_, status_.c_str());
     
     epicsMutexUnlock(mutex_);
@@ -547,7 +584,7 @@ void tpx3HistogramDriver::start()
     
     if (connected_ && !running_) {
         running_ = true;
-        status_ = "Running";
+        status_ = createStatusMessage("Acquisition started", host_, port_, frame_count_, total_counts_);
         setStringParam(statusIndex_, status_.c_str());
         
         // Start worker thread
@@ -570,7 +607,7 @@ void tpx3HistogramDriver::stop()
     
     if (running_) {
         running_ = false;
-        status_ = "Stopped";
+        status_ = createStatusMessage("Acquisition stopped", host_, port_, frame_count_, total_counts_);
         setStringParam(statusIndex_, status_.c_str());
         
         // Signal worker thread to stop
@@ -588,7 +625,7 @@ void tpx3HistogramDriver::saveData(const std::string& filename)
     epicsMutexLock(mutex_);
     
     // In real implementation, this would save histogram data to file
-    status_ = "Data saved to " + filename;
+    status_ = createStatusMessage("Data saved to " + filename, host_, port_, frame_count_, total_counts_);
     setStringParam(statusIndex_, status_.c_str());
     
     epicsMutexUnlock(mutex_);
@@ -612,7 +649,9 @@ void tpx3HistogramDriver::workerThread()
                         printf("Connection closed by peer\n");
                         connected_ = false;
                         setIntegerParam(connectedIndex_, 0);
-                        setStringParam(statusIndex_, "Connection closed");
+                        status_ = createStatusMessage("Connection closed by peer", host_, port_, frame_count_, total_counts_, ++error_count_);
+                        setStringParam(statusIndex_, status_.c_str());
+                        setIntegerParam(errorCountIndex_, error_count_);
                     }
                     break;
                 }
@@ -647,10 +686,19 @@ void tpx3HistogramDriver::workerThread()
                 // Update callbacks
                 callParamCallbacks();
                 
+                // Update status periodically to show activity
+                static int status_counter = 0;
+                if (++status_counter % 100 == 0) {  // Update every 100 iterations
+                    status_ = createStatusMessage("Processing data", host_, port_, frame_count_, total_counts_);
+                    setStringParam(statusIndex_, status_.c_str());
+                }
+                
             } catch (const std::exception& e) {
                 printf("Error in worker thread: %s\n", e.what());
                 error_count_++;
                 setIntegerParam(errorCountIndex_, error_count_);
+                status_ = createStatusMessage("Processing error: " + std::string(e.what()), host_, port_, frame_count_, total_counts_, error_count_);
+                setStringParam(statusIndex_, status_.c_str());
             }
         } else {
             epicsThreadSleep(0.1); // Short sleep when not connected
@@ -678,6 +726,17 @@ void tpx3HistogramDriver::monitorThread()
         setDoubleParam(acquisitionRateIndex_, acquisition_rate_);
         setDoubleParam(processingTimeIndex_, processing_time_);
         setDoubleParam(memoryUsageIndex_, memory_usage_);
+        
+        // Update status with performance metrics
+        if (running_ && connected_) {
+            status_ = createStatusMessage("Running - Rate: " + std::to_string(acquisition_rate_) + " fps", 
+                                        host_, port_, frame_count_, total_counts_, error_count_);
+        } else if (connected_) {
+            status_ = createStatusMessage("Connected - Ready", host_, port_, frame_count_, total_counts_, error_count_);
+        } else {
+            status_ = createStatusMessage("Disconnected", host_, port_, frame_count_, total_counts_, error_count_);
+        }
+        setStringParam(statusIndex_, status_.c_str());
         
         epicsMutexUnlock(mutex_);
         
@@ -868,6 +927,12 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     // Update parameters
     setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
     setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
+    
+    // Update status with frame processing info
+    if (frame_count_ % 10 == 0) {  // Update every 10 frames
+        status_ = createStatusMessage("Processing frames", host_, port_, frame_count_, total_counts_);
+        setStringParam(statusIndex_, status_.c_str());
+    }
     
     // Save updated running sum
     saveRunningSum();
