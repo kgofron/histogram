@@ -317,6 +317,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       total_read_(0),
       bin_width_(384000),
       bin_offset_(0),
+      number_of_bins_(10),
       error_count_(0),
       acquisition_rate_(0.0),
       processing_time_(0.0),
@@ -372,6 +373,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("TOTAL_TIME", asynParamFloat64, &totalTimeIndex_);
     createParam("FILENAME", asynParamOctet, &filenameIndex_);
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
+    createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
     
     // Set initial values
     setIntegerParam(connectedIndex_, 0);
@@ -383,6 +385,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(memoryUsageIndex_, 0.0);
     setDoubleParam(binWidthIndex_, 0.260);
     setDoubleParam(totalTimeIndex_, 260.0);
+    setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setStringParam(statusIndex_, "Initialized - Ready to connect");
     
     // Start monitor thread
@@ -448,6 +451,10 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
         port_ = value;
         setIntegerParam(portIndex_, value);
         printf("Port set to %d\n", value);
+    } else if (function == numberOfBinsIndex_) {
+        number_of_bins_ = value;
+        setIntegerParam(numberOfBinsIndex_, value);
+        printf("Number of bins set to %d\n", value);
     } else {
         status = asynPortDriver::writeInt32(pasynUser, value);
     }
@@ -569,7 +576,7 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
             *nIn = elements_to_copy;
         } else {
             // No data yet, return zeros
-            size_t elements_to_zero = std::min(nElements, static_cast<size_t>(MAX_BINS));
+            size_t elements_to_zero = std::min(nElements, static_cast<size_t>(number_of_bins_));
             for (size_t i = 0; i < elements_to_zero; ++i) {
                 value[i] = 0;
             }
@@ -733,6 +740,8 @@ void tpx3HistogramDriver::workerThread()
                     }
                     break;
                 }
+                
+                printf("DEBUG: Received %zd bytes\n", bytes_read);
 
                 total_read_ += bytes_read;
                 line_buffer_[total_read_] = '\0';
@@ -898,6 +907,8 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         return true;
     }
     
+    printf("DEBUG: Processing line: %s\n", line_buffer);
+    
     // Parse JSON
     json j;
     try {
@@ -913,6 +924,9 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         int bin_size = j["binSize"];
         int bin_width = j["binWidth"];
         int bin_offset = j["binOffset"];
+
+        printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d\n", 
+               frame_number, bin_size, bin_width, bin_offset);
 
         // Create frame histogram
         HistogramData frame_histogram(bin_size, HistogramData::DataType::FRAME_DATA);
@@ -936,6 +950,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 
         // Read any remaining binary data needed
         if (binary_read < binary_needed) {
+            printf("DEBUG: Need to read %zu more bytes of binary data\n", binary_needed - binary_read);
             if (!network_client_->receive_exact(
                 reinterpret_cast<char*>(tof_bin_values.data()) + binary_read,
                 binary_needed - binary_read)) {
@@ -943,13 +958,26 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
                 printf("Failed to read binary data\n");
                 return false;
             }
+            printf("DEBUG: Successfully read binary data\n");
         }
 
         // Convert to little-endian
+        printf("DEBUG: Bin values before conversion: ");
+        for (int i = 0; i < bin_size; ++i) {
+            printf("%u ", tof_bin_values[i]);
+        }
+        printf("\n");
+        
         for (int i = 0; i < bin_size; ++i) {
             tof_bin_values[i] = __builtin_bswap32(tof_bin_values[i]);
             frame_histogram.set_bin_value_32(i, tof_bin_values[i]);
         }
+        
+        printf("DEBUG: Bin values after conversion: ");
+        for (int i = 0; i < bin_size; ++i) {
+            printf("%u ", tof_bin_values[i]);
+        }
+        printf("\n");
 
         // Print frame information
         printf("\nFrame %d data:\n", frame_number);
@@ -1006,11 +1034,19 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
     setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
     
+    // Notify that frame count and total counts have been updated
+    callParamCallbacks(frameCountIndex_);
+    callParamCallbacks(totalCountsIndex_);
+    
     // Update status with frame processing info
     if (frame_count_ % 10 == 0) {  // Update every 10 frames
         status_ = createStatusMessage("Processing frames", host_, port_, frame_count_, total_counts_);
         setStringParam(statusIndex_, status_.c_str());
+        callParamCallbacks(statusIndex_);
     }
+    
+    // Notify that histogram data has been updated
+    callParamCallbacks(histogramDataIndex_);
     
     // Save updated running sum
     saveRunningSum();

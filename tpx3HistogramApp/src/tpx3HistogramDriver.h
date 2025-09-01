@@ -194,6 +194,7 @@ private:
     int totalTimeIndex_;
     int filenameIndex_;
     int histogramDataIndex_;
+    int numberOfBinsIndex_;
 
     // Network and data
     std::string host_;
@@ -212,6 +213,7 @@ private:
     // Processing parameters
     int bin_width_;
     int bin_offset_;
+    int number_of_bins_;
     
     // Threading and synchronization
     epicsMutexId mutex_;
