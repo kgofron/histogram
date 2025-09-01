@@ -2,14 +2,12 @@
 <display version="2.0.0">
   <name>tpx3Histogram</name>
   <macros>
-    <R>Histogram</R>
+    <R>Histogram:</R>
   </macros>
   <widget type="group" version="3.0.0">
     <name>TPX3_Histogram_Control</name>
     <width>1400</width>
     <height>1200</height>
-    
-    <!-- Title Header -->
     <widget type="label" version="2.0.0">
       <name>Title</name>
       <text>Timepix3 Histogram IOC Control Panel</text>
@@ -26,8 +24,6 @@
         </color>
       </background_color>
     </widget>
-    
-    <!-- Connection Control Section -->
     <widget type="group" version="3.0.0">
       <name>ConnectionControl</name>
       <x>10</x>
@@ -50,26 +46,23 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="slide_button" version="2.0.0">
         <name>ConnectionStateButton</name>
-        <pv_name>$(P)$(R):CONNECTION_STATE</pv_name>
+        <pv_name>$(P)$(R)CONNECTION_STATE</pv_name>
         <label>Connect/Disconnect</label>
         <x>20</x>
         <y>40</y>
         <width>150</width>
         <height>60</height>
       </widget>
-      
       <widget type="led" version="2.0.0">
         <name>ConnectedLED</name>
-        <pv_name>$(P)$(R):CONNECTED</pv_name>
+        <pv_name>$(P)$(R)CONNECTED</pv_name>
         <x>190</x>
         <y>50</y>
         <width>30</width>
         <height>30</height>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>ConnectedLabel</name>
         <text>Connected</text>
@@ -77,7 +70,6 @@
         <y>55</y>
         <width>80</width>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>HostLabel</name>
         <text>Host:</text>
@@ -85,16 +77,14 @@
         <y>45</y>
         <width>50</width>
       </widget>
-      
       <widget type="textentry" version="3.0.0">
         <name>HostInput</name>
-        <pv_name>$(P)$(R):HOST</pv_name>
+        <pv_name>$(P)$(R)HOST</pv_name>
         <x>380</x>
         <y>40</y>
         <width>120</width>
         <height>30</height>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>PortLabel</name>
         <text>Port:</text>
@@ -102,21 +92,19 @@
         <y>45</y>
         <width>50</width>
       </widget>
-      
       <widget type="spinner" version="2.0.0">
         <name>PortSpinner</name>
-        <pv_name>$(P)$(R):PORT</pv_name>
+        <pv_name>$(P)$(R)PORT</pv_name>
         <x>570</x>
         <y>40</y>
         <width>80</width>
         <height>30</height>
-        <minimum>1024</minimum>
-        <maximum>65535</maximum>
+        <minimum>1024.0</minimum>
+        <maximum>65535.0</maximum>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>StatusDisplay</name>
-        <pv_name>$(P)$(R):STATUS</pv_name>
+        <pv_name>$(P)$(R)STATUS</pv_name>
         <x>670</x>
         <y>40</y>
         <width>300</width>
@@ -132,7 +120,6 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>StatusLabel</name>
         <text>Status</text>
@@ -141,8 +128,6 @@
         <width>60</width>
       </widget>
     </widget>
-    
-    <!-- Main Control Section -->
     <widget type="group" version="3.0.0">
       <name>MainControl</name>
       <x>10</x>
@@ -165,37 +150,33 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="slide_button" version="2.0.0">
         <name>AcquisitionStateButton</name>
-        <pv_name>$(P)$(R):ACQUISITION_STATE</pv_name>
+        <pv_name>$(P)$(R)ACQUISITION_STATE</pv_name>
         <label>Start/Stop</label>
         <x>20</x>
         <y>40</y>
         <width>150</width>
         <height>60</height>
       </widget>
-      
       <widget type="slide_button" version="2.0.0">
         <name>ResetButton</name>
-        <pv_name>$(P)$(R):RESET</pv_name>
+        <pv_name>$(P)$(R)RESET</pv_name>
         <label>Reset</label>
         <x>190</x>
         <y>40</y>
         <width>120</width>
         <height>60</height>
       </widget>
-      
       <widget type="slide_button" version="2.0.0">
         <name>SaveDataButton</name>
-        <pv_name>$(P)$(R):SAVE_DATA</pv_name>
+        <pv_name>$(P)$(R)SAVE_DATA</pv_name>
         <label>Save Data</label>
         <x>330</x>
         <y>40</y>
         <width>120</width>
         <height>60</height>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>FilenameLabel</name>
         <text>Filename:</text>
@@ -203,16 +184,14 @@
         <y>45</y>
         <width>80</width>
       </widget>
-      
       <widget type="textentry" version="3.0.0">
         <name>FilenameInput</name>
-        <pv_name>$(P)$(R):FILENAME</pv_name>
+        <pv_name>$(P)$(R)FILENAME</pv_name>
         <x>550</x>
         <y>40</y>
         <width>200</width>
         <height>30</height>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>ErrorCountLabel</name>
         <text>Errors:</text>
@@ -220,10 +199,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>ErrorCountDisplay</name>
-        <pv_name>$(P)$(R):ERROR_COUNT</pv_name>
+        <pv_name>$(P)$(R)ERROR_COUNT</pv_name>
         <x>830</x>
         <y>40</y>
         <width>80</width>
@@ -240,14 +218,11 @@
         </border_color>
       </widget>
     </widget>
-    
-    <!-- Data Display Section -->
     <widget type="group" version="3.0.0">
       <name>DataDisplay</name>
       <x>10</x>
       <y>360</y>
       <width>1350</width>
-      <height>200</height>
       <widget type="label" version="2.0.0">
         <name>DataDisplayLabel</name>
         <text>Data Display</text>
@@ -264,18 +239,15 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>FrameCountLabel</name>
         <text>Frame Count:</text>
         <x>20</x>
         <y>45</y>
-        <width>100</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>FrameCountDisplay</name>
-        <pv_name>$(P)$(R):FRAME_COUNT</pv_name>
+        <pv_name>$(P)$(R)FRAME_COUNT</pv_name>
         <x>120</x>
         <y>40</y>
         <width>120</width>
@@ -291,18 +263,15 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>TotalCountsLabel</name>
         <text>Total Counts:</text>
         <x>260</x>
         <y>45</y>
-        <width>100</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>TotalCountsDisplay</name>
-        <pv_name>$(P)$(R):TOTAL_COUNTS</pv_name>
+        <pv_name>$(P)$(R)TOTAL_COUNTS</pv_name>
         <x>360</x>
         <y>40</y>
         <width>120</width>
@@ -318,7 +287,6 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>AcquisitionRateLabel</name>
         <text>Acquisition Rate:</text>
@@ -326,13 +294,11 @@
         <y>45</y>
         <width>120</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>AcquisitionRateDisplay</name>
-        <pv_name>$(P)$(R):ACQUISITION_RATE</pv_name>
+        <pv_name>$(P)$(R)ACQUISITION_RATE</pv_name>
         <x>620</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
@@ -345,7 +311,6 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>ProcessingTimeLabel</name>
         <text>Processing Time (ms):</text>
@@ -353,13 +318,11 @@
         <y>45</y>
         <width>140</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>ProcessingTimeDisplay</name>
-        <pv_name>$(P)$(R):PROCESSING_TIME_MS</pv_name>
+        <pv_name>$(P)$(R)PROCESSING_TIME_MS</pv_name>
         <x>880</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
@@ -372,7 +335,6 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>MemoryUsageLabel</name>
         <text>Memory Usage (MB):</text>
@@ -380,13 +342,11 @@
         <y>45</y>
         <width>140</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>MemoryUsageDisplay</name>
-        <pv_name>$(P)$(R):MEMORY_USAGE_MB</pv_name>
+        <pv_name>$(P)$(R)MEMORY_USAGE_MB</pv_name>
         <x>1140</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
@@ -399,22 +359,17 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Second row of data -->
       <widget type="label" version="2.0.0">
         <name>BinWidthLabel</name>
         <text>Bin Width (ps):</text>
         <x>20</x>
         <y>85</y>
-        <width>100</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>BinWidthDisplay</name>
-        <pv_name>$(P)$(R):BIN_WIDTH_PS</pv_name>
+        <pv_name>$(P)$(R)BIN_WIDTH_PS</pv_name>
         <x>120</x>
         <y>80</y>
-        <width>100</width>
         <height>30</height>
         <background_color>
           <color red="255" green="200" blue="255">
@@ -427,7 +382,6 @@
           </color>
         </border_color>
       </widget>
-      
       <widget type="label" version="2.0.0">
         <name>TotalTimeLabel</name>
         <text>Total Time (ns):</text>
@@ -435,13 +389,11 @@
         <y>85</y>
         <width>120</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>TotalTimeDisplay</name>
-        <pv_name>$(P)$(R):TOTAL_TIME_NS</pv_name>
+        <pv_name>$(P)$(R)TOTAL_TIME_NS</pv_name>
         <x>360</x>
         <y>80</y>
-        <width>100</width>
         <height>30</height>
         <background_color>
           <color red="255" green="200" blue="255">
@@ -455,14 +407,11 @@
         </border_color>
       </widget>
     </widget>
-    
-    <!-- Histogram Bins Section -->
     <widget type="group" version="3.0.0">
       <name>HistogramBins</name>
       <x>10</x>
       <y>580</y>
       <width>1350</width>
-      <height>200</height>
       <widget type="label" version="2.0.0">
         <name>HistogramBinsLabel</name>
         <text>Histogram Bins (First 5)</text>
@@ -479,8 +428,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Bin 0 -->
       <widget type="label" version="2.0.0">
         <name>Bin0Label</name>
         <text>Bin 0:</text>
@@ -488,10 +435,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>Bin0Display</name>
-        <pv_name>$(P)$(R):BIN_0</pv_name>
+        <pv_name>$(P)$(R)BIN_0</pv_name>
         <x>80</x>
         <y>40</y>
         <width>120</width>
@@ -507,8 +453,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Bin 1 -->
       <widget type="label" version="2.0.0">
         <name>Bin1Label</name>
         <text>Bin 1:</text>
@@ -516,10 +460,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>Bin1Display</name>
-        <pv_name>$(P)$(R):BIN_1</pv_name>
+        <pv_name>$(P)$(R)BIN_1</pv_name>
         <x>280</x>
         <y>40</y>
         <width>120</width>
@@ -535,8 +478,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Bin 2 -->
       <widget type="label" version="2.0.0">
         <name>Bin2Label</name>
         <text>Bin 2:</text>
@@ -544,10 +485,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>Bin2Display</name>
-        <pv_name>$(P)$(R):BIN_2</pv_name>
+        <pv_name>$(P)$(R)BIN_2</pv_name>
         <x>480</x>
         <y>40</y>
         <width>120</width>
@@ -563,8 +503,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Bin 3 -->
       <widget type="label" version="2.0.0">
         <name>Bin3Label</name>
         <text>Bin 3:</text>
@@ -572,10 +510,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>Bin3Display</name>
-        <pv_name>$(P)$(R):BIN_3</pv_name>
+        <pv_name>$(P)$(R)BIN_3</pv_name>
         <x>680</x>
         <y>40</y>
         <width>120</width>
@@ -591,8 +528,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Bin 4 -->
       <widget type="label" version="2.0.0">
         <name>Bin4Label</name>
         <text>Bin 4:</text>
@@ -600,10 +535,9 @@
         <y>45</y>
         <width>60</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>Bin4Display</name>
-        <pv_name>$(P)$(R):BIN_4</pv_name>
+        <pv_name>$(P)$(R)BIN_4</pv_name>
         <x>880</x>
         <y>40</y>
         <width>120</width>
@@ -619,8 +553,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Histogram Data Array -->
       <widget type="label" version="2.0.0">
         <name>HistogramDataLabel</name>
         <text>Full Histogram Data (1000 bins):</text>
@@ -628,10 +560,9 @@
         <y>85</y>
         <width>200</width>
       </widget>
-      
       <widget type="textupdate" version="2.0.0">
         <name>HistogramDataDisplay</name>
-        <pv_name>$(P)$(R):HISTOGRAM_DATA</pv_name>
+        <pv_name>$(P)$(R)HISTOGRAM_DATA</pv_name>
         <x>220</x>
         <y>80</y>
         <width>400</width>
@@ -648,8 +579,6 @@
         </border_color>
       </widget>
     </widget>
-    
-    <!-- Performance Monitoring Section -->
     <widget type="group" version="3.0.0">
       <name>PerformanceMonitoring</name>
       <x>10</x>
@@ -672,8 +601,6 @@
           </color>
         </border_color>
       </widget>
-      
-      <!-- Add performance monitoring widgets here if needed -->
       <widget type="label" version="2.0.0">
         <name>InfoLabel</name>
         <text>Real-time monitoring of acquisition rate, processing time, and memory usage</text>
@@ -687,6 +614,31 @@
         </foreground_color>
       </widget>
     </widget>
-    
+  </widget>
+  <widget type="xyplot" version="3.0.0">
+    <name>X/Y Plot</name>
+    <x>1410</x>
+    <y>20</y>
+    <width>1010</width>
+    <height>840</height>
+    <traces>
+      <trace>
+        <name>$(traces[0].y_pv)</name>
+        <x_pv></x_pv>
+        <y_pv>$(P)$(R)HISTOGRAM_DATA</y_pv>
+        <err_pv></err_pv>
+        <axis>0</axis>
+        <trace_type>1</trace_type>
+        <color>
+          <color red="0" green="0" blue="255">
+          </color>
+        </color>
+        <line_width>1</line_width>
+        <line_style>0</line_style>
+        <point_type>0</point_type>
+        <point_size>10</point_size>
+        <visible>true</visible>
+      </trace>
+    </traces>
   </widget>
 </display>
