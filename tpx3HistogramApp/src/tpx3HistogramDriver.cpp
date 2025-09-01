@@ -6,6 +6,260 @@
 #include <epicsStdio.h>
 #include <iocsh.h>
 #include <cstring>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <chrono>
+#include <thread>
+#include <algorithm>
+#include <filesystem>
+
+// HistogramData class implementation
+HistogramData::HistogramData(size_t bin_size, DataType type)
+    : bin_size_(bin_size), data_type_(type) {
+    
+    bin_edges_.resize(bin_size + 1);
+    
+    if (type == DataType::FRAME_DATA) {
+        bin_values_32_.resize(bin_size, 0);
+    } else {
+        bin_values_64_.resize(bin_size, 0);
+    }
+}
+
+// Copy constructor
+HistogramData::HistogramData(const HistogramData& other)
+    : bin_size_(other.bin_size_), data_type_(other.data_type_) {
+    
+    bin_edges_ = other.bin_edges_;
+    
+    if (data_type_ == DataType::FRAME_DATA) {
+        bin_values_32_ = other.bin_values_32_;
+    } else {
+        bin_values_64_ = other.bin_values_64_;
+    }
+}
+
+// Move constructor
+HistogramData::HistogramData(HistogramData&& other) noexcept
+    : bin_size_(other.bin_size_), data_type_(other.data_type_) {
+    
+    bin_edges_ = std::move(other.bin_edges_);
+    bin_values_32_ = std::move(other.bin_values_32_);
+    bin_values_64_ = std::move(other.bin_values_64_);
+    
+    other.bin_size_ = 0;
+    other.data_type_ = DataType::FRAME_DATA;
+}
+
+// Assignment operators
+HistogramData& HistogramData::operator=(const HistogramData& other) {
+    if (this != &other) {
+        bin_size_ = other.bin_size_;
+        data_type_ = other.data_type_;
+        bin_edges_ = other.bin_edges_;
+        
+        if (data_type_ == DataType::FRAME_DATA) {
+            bin_values_32_ = other.bin_values_32_;
+        } else {
+            bin_values_64_ = other.bin_values_64_;
+        }
+    }
+    return *this;
+}
+
+HistogramData& HistogramData::operator=(HistogramData&& other) noexcept {
+    if (this != &other) {
+        bin_size_ = other.bin_size_;
+        data_type_ = other.data_type_;
+        bin_edges_ = std::move(other.bin_edges_);
+        bin_values_32_ = std::move(other.bin_values_32_);
+        bin_values_64_ = std::move(other.bin_values_64_);
+        
+        other.bin_size_ = 0;
+        other.data_type_ = DataType::FRAME_DATA;
+    }
+    return *this;
+}
+
+// Access bin values based on type
+uint32_t HistogramData::get_bin_value_32(size_t index) const {
+    if (data_type_ != DataType::FRAME_DATA || index >= bin_values_32_.size()) {
+        throw std::out_of_range("Invalid index or data type for 32-bit access");
+    }
+    return bin_values_32_[index];
+}
+
+uint64_t HistogramData::get_bin_value_64(size_t index) const {
+    if (data_type_ != DataType::RUNNING_SUM || index >= bin_values_64_.size()) {
+        throw std::out_of_range("Invalid index or data type for 64-bit access");
+    }
+    return bin_values_64_[index];
+}
+
+// Setters
+void HistogramData::set_bin_edge(size_t index, double value) {
+    if (index >= bin_edges_.size()) {
+        throw std::out_of_range("Bin edge index out of range");
+    }
+    bin_edges_[index] = value;
+}
+
+void HistogramData::set_bin_value_32(size_t index, uint32_t value) {
+    if (data_type_ != DataType::FRAME_DATA || index >= bin_values_32_.size()) {
+        throw std::out_of_range("Invalid index or data type for 32-bit access");
+    }
+    bin_values_32_[index] = value;
+}
+
+void HistogramData::set_bin_value_64(size_t index, uint64_t value) {
+    if (data_type_ != DataType::RUNNING_SUM || index >= bin_values_64_.size()) {
+        throw std::out_of_range("Invalid index or data type for 64-bit access");
+    }
+    bin_values_64_[index] = value;
+}
+
+// Calculate bin edges from parameters
+void HistogramData::calculate_bin_edges(int bin_width, int bin_offset) {
+    for (size_t i = 0; i < bin_edges_.size(); ++i) {
+        bin_edges_[i] = (bin_offset + (i * bin_width)) * TPX3_TDC_CLOCK_PERIOD_SEC;
+    }
+}
+
+// Add another histogram to this one (for running sum)
+void HistogramData::add_histogram(const HistogramData& other) {
+    if (other.data_type_ != DataType::FRAME_DATA || data_type_ != DataType::RUNNING_SUM) {
+        throw std::invalid_argument("Can only add frame data to running sum");
+    }
+    
+    if (other.bin_size_ != bin_size_) {
+        throw std::invalid_argument("Bin sizes must match for addition");
+    }
+
+    for (size_t i = 0; i < bin_size_; ++i) {
+        uint64_t new_value = bin_values_64_[i] + other.bin_values_32_[i];
+        if (new_value < bin_values_64_[i]) {
+            std::cerr << "Warning: Overflow detected in bin " << i 
+                      << ", capping at maximum value" << std::endl;
+            bin_values_64_[i] = UINT64_MAX;
+        } else {
+            bin_values_64_[i] = new_value;
+        }
+    }
+}
+
+// NetworkClient class implementation
+NetworkClient::NetworkClient() : socket_fd_(-1), connected_(false) {}
+
+NetworkClient::~NetworkClient() {
+    disconnect();
+}
+
+// Move constructor
+NetworkClient::NetworkClient(NetworkClient&& other) noexcept
+    : socket_fd_(other.socket_fd_), connected_(other.connected_) {
+    other.socket_fd_ = -1;
+    other.connected_ = false;
+}
+
+NetworkClient& NetworkClient::operator=(NetworkClient&& other) noexcept {
+    if (this != &other) {
+        disconnect();
+        socket_fd_ = other.socket_fd_;
+        connected_ = other.connected_;
+        other.socket_fd_ = -1;
+        other.connected_ = false;
+    }
+    return *this;
+}
+
+bool NetworkClient::connect(const std::string& host, int port) {
+    socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_fd_ < 0) {
+        std::cerr << "Socket creation failed: " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Set TCP_NODELAY to disable Nagle's algorithm
+    int flag = 1;
+    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+        std::cerr << "Failed to set TCP_NODELAY: " << strerror(errno) << std::endl;
+    }
+
+    // Set larger socket buffers
+    int rcvbuf = 256 * 1024;  // 256KB receive buffer
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) < 0) {
+        std::cerr << "Failed to set receive buffer size: " << strerror(errno) << std::endl;
+    }
+
+    struct sockaddr_in server_addr{};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    
+    if (inet_pton(AF_INET, host.c_str(), &server_addr.sin_addr) <= 0) {
+        std::cerr << "Invalid address: " << host << std::endl;
+        close(socket_fd_);
+        socket_fd_ = -1;
+        return false;
+    }
+
+    std::cout << "Attempting to connect to " << host << ":" << port << "..." << std::endl;
+    
+    if (::connect(socket_fd_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        std::cerr << "Connection failed: " << strerror(errno) << std::endl;
+        close(socket_fd_);
+        socket_fd_ = -1;
+        return false;
+    }
+    
+    std::cout << "Connected successfully" << std::endl;
+    connected_ = true;
+    return true;
+}
+
+void NetworkClient::disconnect() {
+    if (socket_fd_ >= 0) {
+        close(socket_fd_);
+        socket_fd_ = -1;
+    }
+    connected_ = false;
+}
+
+ssize_t NetworkClient::receive(char* buffer, size_t max_size) {
+    if (!connected_ || socket_fd_ < 0) {
+        return -1;
+    }
+    
+    ssize_t bytes_read = recv(socket_fd_, buffer, max_size, 0);
+    
+    if (bytes_read == 0) {
+        std::cout << "Connection closed by peer" << std::endl;
+        connected_ = false;
+    } else if (bytes_read < 0) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cerr << "Socket error: " << strerror(errno) << std::endl;
+            connected_ = false;
+        }
+    }
+    
+    return bytes_read;
+}
+
+bool NetworkClient::receive_exact(char* buffer, size_t size) {
+    size_t total_received = 0;
+    
+    while (total_received < size) {
+        ssize_t bytes = receive(buffer + total_received, size - total_received);
+        
+        if (bytes <= 0) {
+            return false;
+        }
+        
+        total_received += bytes;
+    }
+    
+    return true;
+}
 
 // Parameter definitions
 #define NUM_PARAMS 22
@@ -23,22 +277,21 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       port_(DEFAULT_PORT),
       connected_(false),
       running_(false),
+      network_client_(std::make_unique<NetworkClient>()),
       frame_count_(0),
       total_counts_(0),
-      bin_size_(MAX_BINS),
+      running_sum_(nullptr),
+      line_buffer_(MAX_BUFFER_SIZE),
+      total_read_(0),
+      bin_width_(384000),
+      bin_offset_(0),
       error_count_(0),
       acquisition_rate_(0.0),
       processing_time_(0.0),
       memory_usage_(0.0)
 {
-    // Initialize bin arrays
-    bin_values_.resize(MAX_BINS, 0);
-    bin_edges_.resize(MAX_BINS + 1, 0.0);
-    
-    // Initialize bin edges (picoseconds)
-    for (size_t i = 0; i <= MAX_BINS; ++i) {
-        bin_edges_[i] = i * 0.260; // 0.260 ps per bin
-    }
+    // Create data directory
+    std::filesystem::create_directories("data");
     
     // Create mutex and event
     mutex_ = epicsMutexCreate();
@@ -231,12 +484,17 @@ void tpx3HistogramDriver::connect()
     epicsMutexLock(mutex_);
     
     if (!connected_) {
-        // Simulate connection (in real implementation, this would connect to Timepix3 server)
-        connected_ = true;
-        status_ = "Connected";
-        setIntegerParam(connectedIndex_, 1);
-        setStringParam(statusIndex_, status_.c_str());
-        printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+        if (network_client_->connect(host_, port_)) {
+            connected_ = true;
+            status_ = "Connected";
+            setIntegerParam(connectedIndex_, 1);
+            setStringParam(statusIndex_, status_.c_str());
+            printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+        } else {
+            status_ = "Connection failed";
+            setStringParam(statusIndex_, status_.c_str());
+            printf("Failed to connect to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+        }
     }
     
     epicsMutexUnlock(mutex_);
@@ -252,6 +510,7 @@ void tpx3HistogramDriver::disconnect()
             stop();
         }
         
+        network_client_->disconnect();
         connected_ = false;
         status_ = "Disconnected";
         setIntegerParam(connectedIndex_, 0);
@@ -269,7 +528,8 @@ void tpx3HistogramDriver::reset()
     
     frame_count_ = 0;
     total_counts_ = 0;
-    std::fill(bin_values_.begin(), bin_values_.end(), 0);
+    running_sum_ = nullptr;
+    total_read_ = 0;
     
     setIntegerParam(frameCountIndex_, 0);
     setIntegerParam(totalCountsIndex_, 0);
@@ -340,33 +600,61 @@ void tpx3HistogramDriver::saveData(const std::string& filename)
 void tpx3HistogramDriver::workerThread()
 {
     while (running_) {
-        if (connected_) {
-            // Simulate histogram data processing
-            epicsMutexLock(mutex_);
-            
-            // Simulate frame processing
-            frame_count_++;
-            total_counts_ += 1000; // Simulate counts per frame
-            
-            // Simulate bin updates
-            for (size_t i = 0; i < bin_size_; ++i) {
-                bin_values_[i] += (i % 10) + 1; // Simulate bin values
+        if (connected_ && network_client_->is_connected()) {
+            try {
+                ssize_t bytes_read = network_client_->receive(
+                    line_buffer_.data() + total_read_, 
+                    MAX_BUFFER_SIZE - total_read_ - 1
+                );
+
+                if (bytes_read <= 0) {
+                    if (bytes_read == 0) {
+                        printf("Connection closed by peer\n");
+                        connected_ = false;
+                        setIntegerParam(connectedIndex_, 0);
+                        setStringParam(statusIndex_, "Connection closed");
+                    }
+                    break;
+                }
+
+                total_read_ += bytes_read;
+                line_buffer_[total_read_] = '\0';
+                
+                // Look for newline
+                char* newline_pos = static_cast<char*>(memchr(line_buffer_.data(), '\n', total_read_));
+                if (newline_pos) {
+                    *newline_pos = '\0';
+                    
+                    // Process complete line
+                    if (!processDataLine(line_buffer_.data(), newline_pos, total_read_)) {
+                        break;
+                    }
+                    
+                    // Move remaining data to start of buffer
+                    size_t remaining = total_read_ - (newline_pos - line_buffer_.data() + 1);
+                    if (remaining > 0) {
+                        memmove(line_buffer_.data(), newline_pos + 1, remaining);
+                    }
+                    total_read_ = remaining;
+                }
+                
+                // Prevent buffer overflow
+                if (total_read_ >= MAX_BUFFER_SIZE - 1) {
+                    printf("Buffer full, resetting\n");
+                    total_read_ = 0;
+                }
+                
+                // Update callbacks
+                callParamCallbacks();
+                
+            } catch (const std::exception& e) {
+                printf("Error in worker thread: %s\n", e.what());
+                error_count_++;
+                setIntegerParam(errorCountIndex_, error_count_);
             }
-            
-            // Update parameters
-            setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
-            setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
-            
-            epicsMutexUnlock(mutex_);
-            
-            // Signal data ready
-            epicsEventSignal(dataReady_);
-            
-            // Update callbacks
-            callParamCallbacks();
+        } else {
+            epicsThreadSleep(0.1); // Short sleep when not connected
         }
-        
-        epicsThreadSleep(1.0); // 1 second interval
     }
 }
 
@@ -465,3 +753,163 @@ extern "C" void register_func_tpx3HistogramConfigure(void)
 
 // Export the registrar function
 epicsExportRegistrar(register_func_tpx3HistogramConfigure);
+
+// New histogram processing methods
+bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, size_t total_read) {
+    // Skip empty lines
+    if (strlen(line_buffer) == 0) {
+        return true;
+    }
+    
+    // Parse JSON
+    json j;
+    try {
+        j = json::parse(line_buffer);
+    } catch (const json::parse_error& e) {
+        printf("JSON parse error: %s\n", e.what());
+        return true;  // Continue processing
+    }
+
+    try {
+        // Extract header information
+        int frame_number = j["frameNumber"];
+        int bin_size = j["binSize"];
+        int bin_width = j["binWidth"];
+        int bin_offset = j["binOffset"];
+
+        // Create frame histogram
+        HistogramData frame_histogram(bin_size, HistogramData::DataType::FRAME_DATA);
+        
+        // Calculate bin edges
+        frame_histogram.calculate_bin_edges(bin_width, bin_offset);
+
+        // Read binary data
+        std::vector<uint32_t> tof_bin_values(bin_size);
+        size_t binary_needed = bin_size * sizeof(uint32_t);
+        
+        // Copy any binary data we already have after the newline
+        size_t remaining = total_read - (newline_pos - line_buffer + 1);
+        size_t binary_read = 0;
+        
+        if (remaining > 0) {
+            size_t to_copy = std::min(remaining, binary_needed);
+            memcpy(tof_bin_values.data(), newline_pos + 1, to_copy);
+            binary_read = to_copy;
+        }
+
+        // Read any remaining binary data needed
+        if (binary_read < binary_needed) {
+            if (!network_client_->receive_exact(
+                reinterpret_cast<char*>(tof_bin_values.data()) + binary_read,
+                binary_needed - binary_read)) {
+                
+                printf("Failed to read binary data\n");
+                return false;
+            }
+        }
+
+        // Convert to little-endian
+        for (int i = 0; i < bin_size; ++i) {
+            tof_bin_values[i] = __builtin_bswap32(tof_bin_values[i]);
+            frame_histogram.set_bin_value_32(i, tof_bin_values[i]);
+        }
+
+        // Print frame information
+        printf("\nFrame %d data:\n", frame_number);
+        printf("Bin edges: ");
+        for (int i = 0; i < bin_size + 1; ++i) {
+            printf("%.9e ", frame_histogram.get_bin_edges()[i]);
+        }
+        printf("\nBin values: ");
+        for (int i = 0; i < bin_size; ++i) {
+            printf("%u ", frame_histogram.get_bin_value_32(i));
+        }
+        printf("\n");
+
+        // Process frame
+        processFrame(frame_histogram);
+        
+        printf("Frame %d processed (running sum updated)\n", frame_number);
+
+    } catch (const std::exception& e) {
+        printf("Error processing frame: %s\n", e.what());
+    }
+
+    return true;
+}
+
+void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
+    epicsMutexLock(mutex_);
+    
+    if (!running_sum_) {
+        // Initialize running sum with same bin size
+        running_sum_ = std::make_unique<HistogramData>(
+            frame_data.get_bin_size(), 
+            HistogramData::DataType::RUNNING_SUM
+        );
+        
+        // Copy bin edges
+        for (size_t i = 0; i < frame_data.get_bin_edges().size(); ++i) {
+            running_sum_->set_bin_edge(i, frame_data.get_bin_edges()[i]);
+        }
+    }
+    
+    // Add frame data to running sum
+    running_sum_->add_histogram(frame_data);
+    
+    // Update frame count and total counts
+    frame_count_++;
+    uint64_t frame_total = 0;
+    for (size_t i = 0; i < frame_data.get_bin_size(); ++i) {
+        frame_total += frame_data.get_bin_value_32(i);
+    }
+    total_counts_ += frame_total;
+    
+    // Update parameters
+    setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
+    setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
+    
+    // Save updated running sum
+    saveRunningSum();
+    
+    epicsMutexUnlock(mutex_);
+}
+
+void tpx3HistogramDriver::saveRunningSum() {
+    if (!running_sum_) {
+        return;
+    }
+    
+    std::string filename = "data/tof-histogram-running-sum.txt";
+    saveHistogramToFile(filename, *running_sum_);
+}
+
+void tpx3HistogramDriver::saveHistogramToFile(const std::string& filename, const HistogramData& histogram) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        printf("Failed to open file: %s\n", filename.c_str());
+        return;
+    }
+
+    file << "# Time of Flight Histogram Data\n";
+    file << "# Bins: " << histogram.get_bin_size() << "\n";
+    file << "#\n";
+
+    for (size_t i = 0; i < histogram.get_bin_size(); ++i) {
+        if (histogram.get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+            file << std::scientific << std::setprecision(9) 
+                 << histogram.get_bin_edges()[i] << "\t" 
+                 << histogram.get_bin_value_64(i) << "\n";
+        } else {
+            file << std::scientific << std::setprecision(9) 
+                 << histogram.get_bin_edges()[i] << "\t" 
+                 << histogram.get_bin_value_32(i) << "\n";
+        }
+    }
+    
+    // Write last bin edge
+    file << std::scientific << std::setprecision(9) 
+         << histogram.get_bin_edges()[histogram.get_bin_size()] << "\n";
+    
+    file.close();
+}

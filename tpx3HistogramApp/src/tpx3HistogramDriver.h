@@ -9,8 +9,140 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <atomic>
+#include <mutex>
+#include <memory>
+#include <queue>
+#include <functional>
+#include <stdexcept>
+#include <system_error>
+#include <cstring>
+#include <iomanip>
+#include <filesystem>
+
+// Network includes
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
+// JSON parsing
+#include <nlohmann/json.hpp>
+
+// Use nlohmann namespace for convenience
+using json = nlohmann::json;
+
+// Forward declarations
+class HistogramData;
+class NetworkClient;
+
+/**
+ * @brief Represents histogram data with bin edges and values
+ */
+class HistogramData {
+public:
+    enum class DataType {
+        FRAME_DATA,      // Individual frame data (32-bit)
+        RUNNING_SUM      // Accumulated data (64-bit)
+    };
+
+    HistogramData(size_t bin_size, DataType type = DataType::FRAME_DATA);
+    HistogramData(const HistogramData& other);
+    HistogramData(HistogramData&& other) noexcept;
+    HistogramData& operator=(const HistogramData& other);
+    HistogramData& operator=(HistogramData&& other) noexcept;
+    ~HistogramData() = default;
+
+    // Getters
+    size_t get_bin_size() const { return bin_size_; }
+    DataType get_data_type() const { return data_type_; }
+    const std::vector<double>& get_bin_edges() const { return bin_edges_; }
+    
+    // Access bin values based on type
+    uint32_t get_bin_value_32(size_t index) const;
+    uint64_t get_bin_value_64(size_t index) const;
+
+    // Setters
+    void set_bin_edge(size_t index, double value);
+    void set_bin_value_32(size_t index, uint32_t value);
+    void set_bin_value_64(size_t index, uint64_t value);
+
+    // Calculate bin edges from parameters
+    void calculate_bin_edges(int bin_width, int bin_offset);
+
+    // Add another histogram to this one (for running sum)
+    void add_histogram(const HistogramData& other);
+
+private:
+    size_t bin_size_;
+    DataType data_type_;
+    std::vector<double> bin_edges_;
+    std::vector<uint32_t> bin_values_32_;
+    std::vector<uint64_t> bin_values_64_;
+};
+
+/**
+ * @brief Network client for TCP socket communication
+ */
+class NetworkClient {
+public:
+    NetworkClient();
+    ~NetworkClient();
+
+    // Disable copy
+    NetworkClient(const NetworkClient&) = delete;
+    NetworkClient& operator=(const NetworkClient&) = delete;
+
+    // Allow move
+    NetworkClient(NetworkClient&& other) noexcept;
+    NetworkClient& operator=(NetworkClient&& other) noexcept;
+
+    /**
+     * @brief Connect to server
+     * @param host Server hostname/IP
+     * @param port Server port
+     * @return true if successful, false otherwise
+     */
+    bool connect(const std::string& host, int port);
+
+    /**
+     * @brief Disconnect from server
+     */
+    void disconnect();
+
+    /**
+     * @brief Check if connected
+     * @return true if connected
+     */
+    bool is_connected() const { return connected_; }
+
+    /**
+     * @brief Receive data from socket
+     * @param buffer Buffer to store received data
+     * @param max_size Maximum size to receive
+     * @return Number of bytes received, -1 on error, 0 on connection closed
+     */
+    ssize_t receive(char* buffer, size_t max_size);
+
+    /**
+     * @brief Receive exact amount of data
+     * @param buffer Buffer to store received data
+     * @param size Exact size to receive
+     * @return true if successful, false otherwise
+     */
+    bool receive_exact(char* buffer, size_t size);
+
+private:
+    int socket_fd_;
+    bool connected_;
+};
 
 // Constants
+constexpr double TPX3_TDC_CLOCK_PERIOD_SEC = (1.5625 / 6.0) * 1e-9;
+constexpr size_t MAX_BUFFER_SIZE = 32768;
 constexpr size_t MAX_BINS = 1000;
 constexpr int DEFAULT_PORT = 8451;
 constexpr const char* DEFAULT_HOST = "127.0.0.1";
@@ -38,7 +170,7 @@ public:
     bool isConnected() const { return connected_; }
     uint64_t getFrameCount() const { return frame_count_; }
     uint64_t getTotalCounts() const { return total_counts_; }
-    const std::vector<uint64_t>& getBinValues() const { return bin_values_; }
+    const HistogramData* getRunningSum() const { return running_sum_.get(); }
 
 private:
     // Parameter indices
@@ -66,13 +198,18 @@ private:
     int port_;
     bool connected_;
     bool running_;
+    std::unique_ptr<NetworkClient> network_client_;
     
     // Histogram data
     uint64_t frame_count_;
     uint64_t total_counts_;
-    std::vector<uint64_t> bin_values_;
-    std::vector<double> bin_edges_;
-    size_t bin_size_;
+    std::unique_ptr<HistogramData> running_sum_;
+    std::vector<char> line_buffer_;
+    size_t total_read_;
+    
+    // Processing parameters
+    int bin_width_;
+    int bin_offset_;
     
     // Threading and synchronization
     epicsMutexId mutex_;
@@ -96,6 +233,12 @@ private:
     void setError(const char *errorMsg);
     void processHistogramData();
     void updateBinValues();
+    
+    // New histogram processing methods
+    bool processDataLine(char* line_buffer, char* newline_pos, size_t total_read);
+    void processFrame(const HistogramData& frame_data);
+    void saveRunningSum();
+    void saveHistogramToFile(const std::string& filename, const HistogramData& histogram);
 };
 
 // Function to get driver instance
