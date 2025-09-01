@@ -195,6 +195,8 @@ private:
     int filenameIndex_;
     int histogramDataIndex_;
     int numberOfBinsIndex_;
+    int maxBinsIndex_;           // Maximum number of bins for array record
+    int histogramBinIndex_[10];  // Individual bin parameters
 
     // Network and data
     std::string host_;

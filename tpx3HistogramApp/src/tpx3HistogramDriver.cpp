@@ -374,6 +374,22 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("FILENAME", asynParamOctet, &filenameIndex_);
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
+    createParam("MAX_BINS", asynParamInt32, &maxBinsIndex_);
+    
+    // Create individual bin parameters
+    for (int i = 0; i < 10; ++i) {
+        char paramName[32];
+        snprintf(paramName, sizeof(paramName), "HISTOGRAM_BIN_%d", i);
+        createParam(paramName, asynParamInt32, &histogramBinIndex_[i]);
+    }
+    
+    printf("DEBUG: Parameter indices - histogramDataIndex_=%d, numberOfBinsIndex_=%d\n", 
+           histogramDataIndex_, numberOfBinsIndex_);
+    printf("DEBUG: Individual bin indices: ");
+    for (int i = 0; i < 10; ++i) {
+        printf("%d ", histogramBinIndex_[i]);
+    }
+    printf("\n");
     
     // Set initial values
     setIntegerParam(connectedIndex_, 0);
@@ -386,6 +402,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(binWidthIndex_, 0.260);
     setDoubleParam(totalTimeIndex_, 260.0);
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
+    setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
     setStringParam(statusIndex_, "Initialized - Ready to connect");
     
     // Start monitor thread
@@ -559,11 +576,16 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
     
+    printf("DEBUG: readInt32Array called with function=%d, nElements=%zu\n", function, nElements);
+    
     if (function == histogramDataIndex_) {
+        printf("DEBUG: Reading histogram data array\n");
         epicsMutexLock(mutex_);
         
         if (running_sum_) {
             size_t elements_to_copy = std::min(nElements, running_sum_->get_bin_size());
+            printf("DEBUG: Copying %zu elements from running_sum_ (bin_size=%zu)\n", elements_to_copy, running_sum_->get_bin_size());
+            
             for (size_t i = 0; i < elements_to_copy; ++i) {
                 if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
                     // Convert 64-bit to 32-bit (with overflow protection)
@@ -573,18 +595,30 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
                     value[i] = static_cast<epicsInt32>(running_sum_->get_bin_value_32(i));
                 }
             }
-            *nIn = elements_to_copy;
-        } else {
-            // No data yet, return zeros
-            size_t elements_to_zero = std::min(nElements, static_cast<size_t>(number_of_bins_));
-            for (size_t i = 0; i < elements_to_zero; ++i) {
+            
+            // Zero out remaining elements if nElements > bin_size
+            for (size_t i = elements_to_copy; i < nElements; ++i) {
                 value[i] = 0;
             }
-            *nIn = elements_to_zero;
+            
+            *nIn = nElements;  // Always return the requested number of elements
+            printf("DEBUG: Returning %zu histogram values (first 10): ", nElements);
+            for (size_t i = 0; i < std::min(elements_to_copy, static_cast<size_t>(10)); ++i) {
+                printf("%d ", value[i]);
+            }
+            printf("\n");
+        } else {
+            // No data yet, return zeros
+            printf("DEBUG: No running_sum_ data, returning zeros\n");
+            for (size_t i = 0; i < nElements; ++i) {
+                value[i] = 0;
+            }
+            *nIn = nElements;
         }
         
         epicsMutexUnlock(mutex_);
     } else {
+        printf("DEBUG: readInt32Array function %d not handled, calling parent\n", function);
         status = asynPortDriver::readInt32Array(pasynUser, value, nElements, nIn);
     }
     
@@ -1004,6 +1038,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 }
 
 void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
+    printf("DEBUG: processFrame called with frame_data bin_size=%zu\n", frame_data.get_bin_size());
     epicsMutexLock(mutex_);
     
     if (!running_sum_) {
@@ -1030,6 +1065,9 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     }
     total_counts_ += frame_total;
     
+    printf("DEBUG: Updated frame_count_=%llu, total_counts_=%llu\n", 
+           (unsigned long long)frame_count_, (unsigned long long)total_counts_);
+    
     // Update parameters
     setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
     setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
@@ -1038,6 +1076,8 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     callParamCallbacks(frameCountIndex_);
     callParamCallbacks(totalCountsIndex_);
     
+    printf("DEBUG: Called callParamCallbacks for frame count and total counts\n");
+    
     // Update status with frame processing info
     if (frame_count_ % 10 == 0) {  // Update every 10 frames
         status_ = createStatusMessage("Processing frames", host_, port_, frame_count_, total_counts_);
@@ -1045,8 +1085,27 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         callParamCallbacks(statusIndex_);
     }
     
+    // Update individual bin parameters
+    if (running_sum_) {
+        for (int i = 0; i < 10 && i < static_cast<int>(running_sum_->get_bin_size()); ++i) {
+            uint32_t bin_value;
+            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                // Convert 64-bit to 32-bit (with overflow protection)
+                uint64_t val64 = running_sum_->get_bin_value_64(i);
+                bin_value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(val64);
+            } else {
+                bin_value = running_sum_->get_bin_value_32(i);
+            }
+            setIntegerParam(histogramBinIndex_[i], static_cast<epicsInt32>(bin_value));
+            callParamCallbacks(histogramBinIndex_[i]);
+        }
+        printf("DEBUG: Updated individual bin parameters\n");
+    }
+    
     // Notify that histogram data has been updated
+    printf("DEBUG: About to call callParamCallbacks for histogramDataIndex_=%d\n", histogramDataIndex_);
     callParamCallbacks(histogramDataIndex_);
+    printf("DEBUG: Finished callParamCallbacks for histogramDataIndex_\n");
     
     // Save updated running sum
     saveRunningSum();
