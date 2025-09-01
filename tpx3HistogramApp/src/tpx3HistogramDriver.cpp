@@ -77,6 +77,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("FRAME_COUNT", asynParamInt32, &frameCountIndex_);
     createParam("TOTAL_COUNTS", asynParamInt32, &totalCountsIndex_);
     createParam("CONNECTED", asynParamInt32, &connectedIndex_);
+
     createParam("STATUS", asynParamOctet, &statusIndex_);
     createParam("ERROR_COUNT", asynParamInt32, &errorCountIndex_);
     createParam("ACQUISITION_RATE", asynParamFloat64, &acquisitionRateIndex_);

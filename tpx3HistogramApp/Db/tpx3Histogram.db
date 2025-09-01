@@ -11,10 +11,10 @@ record(bo, "$(P)$(R)CONNECTION_STATE") {
     field(FLNK, "$(P)$(R)CONNECTED")
 }
 
-record(bi, "$(P)$(R)CONNECTED") {
+record(bo, "$(P)$(R)CONNECTED") {
     field(DESC, "Connection status")
     field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(OUT, "0")
     field(ZNAM, "Disconnected")
     field(ONAM, "Connected")
 }
