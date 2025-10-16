@@ -333,25 +333,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     // Initialize status
     status_ = "Initialized - Ready to connect";
     
-    // Create parameter indices
-    connectionStateIndex_ = 0;
-    resetIndex_ = 1;
-    acquisitionStateIndex_ = 2;
-    saveDataIndex_ = 3;
-    hostIndex_ = 4;
-    portIndex_ = 5;
-    frameCountIndex_ = 6;
-    totalCountsIndex_ = 7;
-    connectedIndex_ = 8;
-    statusIndex_ = 9;
-    errorCountIndex_ = 10;
-    acquisitionRateIndex_ = 11;
-    processingTimeIndex_ = 12;
-    memoryUsageIndex_ = 13;
-    binWidthIndex_ = 14;
-    totalTimeIndex_ = 15;
-    filenameIndex_ = 16;
-    histogramDataIndex_ = 17;
+    // Parameter indices will be set by createParam calls
+    // We don't need to manually assign them as createParam handles this
     
     // Create parameters
     createParam("CONNECTION_STATE", asynParamInt32, &connectionStateIndex_);
@@ -397,6 +380,32 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
         printf("%d ", histogramBinIndex_[i]);
     }
     printf("\n");
+    printf("DEBUG: Display bin indices: ");
+    for (int i = 0; i < 5; ++i) {
+        printf("%d ", binDisplayIndex_[i]);
+    }
+    printf("\n");
+    printf("DEBUG: All parameter indices:\n");
+    printf("  CONNECTION_STATE=%d\n", connectionStateIndex_);
+    printf("  RESET=%d\n", resetIndex_);
+    printf("  ACQUISITION_STATE=%d\n", acquisitionStateIndex_);
+    printf("  SAVE_DATA=%d\n", saveDataIndex_);
+    printf("  HOST=%d\n", hostIndex_);
+    printf("  PORT=%d\n", portIndex_);
+    printf("  FRAME_COUNT=%d\n", frameCountIndex_);
+    printf("  TOTAL_COUNTS=%d\n", totalCountsIndex_);
+    printf("  CONNECTED=%d\n", connectedIndex_);
+    printf("  STATUS=%d\n", statusIndex_);
+    printf("  ERROR_COUNT=%d\n", errorCountIndex_);
+    printf("  ACQUISITION_RATE=%d\n", acquisitionRateIndex_);
+    printf("  PROCESSING_TIME=%d\n", processingTimeIndex_);
+    printf("  MEMORY_USAGE=%d\n", memoryUsageIndex_);
+    printf("  BIN_WIDTH=%d\n", binWidthIndex_);
+    printf("  TOTAL_TIME=%d\n", totalTimeIndex_);
+    printf("  FILENAME=%d\n", filenameIndex_);
+    printf("  HISTOGRAM_DATA=%d\n", histogramDataIndex_);
+    printf("  NUMBER_OF_BINS=%d\n", numberOfBinsIndex_);
+    printf("  MAX_BINS=%d\n", maxBinsIndex_);
     
     // Set initial values
     setIntegerParam(connectedIndex_, 0);
@@ -411,6 +420,14 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
     setStringParam(statusIndex_, "Initialized - Ready to connect");
+    
+    // Create some test histogram data for debugging
+    printf("DEBUG: Creating test histogram data\n");
+    running_sum_ = std::make_unique<HistogramData>(10, HistogramData::DataType::RUNNING_SUM);
+    for (int i = 0; i < 10; ++i) {
+        running_sum_->set_bin_value_64(i, i * 100);  // Test values: 0, 100, 200, 300, ...
+    }
+    printf("DEBUG: Test histogram data created with %zu bins\n", running_sum_->get_bin_size());
     
     // Start monitor thread
     monitorThreadId_ = epicsThreadCreate("tpx3HistogramMonitor",
@@ -627,7 +644,11 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
     
-    printf("DEBUG: readInt32Array called with function=%d, nElements=%zu\n", function, nElements);
+    printf("DEBUG: readInt32Array called with function=%d, histogramDataIndex_=%d, nElements=%zu\n", 
+           function, histogramDataIndex_, nElements);
+    
+    // Always print this to confirm the method is being called
+    printf("DEBUG: readInt32Array method entry - function=%d, nElements=%zu\n", function, nElements);
     
     if (function == histogramDataIndex_) {
         printf("DEBUG: Reading histogram data array\n");
@@ -1170,6 +1191,8 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     
     // Notify that histogram data has been updated
     printf("DEBUG: About to call callParamCallbacks for histogramDataIndex_=%d\n", histogramDataIndex_);
+    
+    // Call parameter callbacks for the histogram data array
     callParamCallbacks(histogramDataIndex_);
     printf("DEBUG: Finished callParamCallbacks for histogramDataIndex_\n");
     

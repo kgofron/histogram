@@ -275,7 +275,7 @@ record(ai, "$(P)$(R)HISTOGRAM_BIN_9") {
 
 # Waveform record for histogram data array (configurable size)
 record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
-    field(DESC, "Full histogram data array (configurable size)")
+    field(DESC, "Histogram data array")
     field(DTYP, "asynInt32ArrayIn")
     field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_DATA")
     field(FTVL, "LONG")
