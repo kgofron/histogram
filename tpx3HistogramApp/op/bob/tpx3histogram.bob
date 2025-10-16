@@ -210,7 +210,6 @@
           <color red="255" green="200" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="255" green="0" blue="0">
@@ -256,7 +255,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -280,7 +278,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -304,7 +301,6 @@
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -328,7 +324,6 @@
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -352,7 +347,6 @@
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -375,7 +369,6 @@
           <color red="255" green="200" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="0" blue="128">
@@ -399,7 +392,6 @@
           <color red="255" green="200" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="0" blue="128">
@@ -446,7 +438,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -471,7 +462,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -496,7 +486,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -521,7 +510,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -546,7 +534,6 @@
           <color red="255" green="255" blue="200">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
@@ -621,6 +608,30 @@
     <y>20</y>
     <width>1010</width>
     <height>840</height>
+    <y_axes>
+      <y_axis>
+        <title>Y</title>
+        <autoscale>false</autoscale>
+        <log_scale>false</log_scale>
+        <minimum>0.0</minimum>
+        <maximum>600.0</maximum>
+        <show_grid>false</show_grid>
+        <title_font>
+          <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+          </font>
+        </title_font>
+        <scale_font>
+          <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+          </font>
+        </scale_font>
+        <on_right>false</on_right>
+        <visible>true</visible>
+        <color>
+          <color name="Text" red="0" green="0" blue="0">
+          </color>
+        </color>
+      </y_axis>
+    </y_axes>
     <traces>
       <trace>
         <name>$(traces[0].y_pv)</name>

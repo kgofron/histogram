@@ -376,6 +376,13 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
     createParam("MAX_BINS", asynParamInt32, &maxBinsIndex_);
     
+    // Create individual bin parameters for display
+    createParam("BIN_0", asynParamInt32, &binDisplayIndex_[0]);
+    createParam("BIN_1", asynParamInt32, &binDisplayIndex_[1]);
+    createParam("BIN_2", asynParamInt32, &binDisplayIndex_[2]);
+    createParam("BIN_3", asynParamInt32, &binDisplayIndex_[3]);
+    createParam("BIN_4", asynParamInt32, &binDisplayIndex_[4]);
+    
     // Create individual bin parameters
     for (int i = 0; i < 10; ++i) {
         char paramName[32];
@@ -511,10 +518,54 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = static_cast<epicsInt32>(frame_count_);
     } else if (function == totalCountsIndex_) {
         *value = static_cast<epicsInt32>(total_counts_);
-    } else if (function == errorCountIndex_) {
+    } else     if (function == errorCountIndex_) {
         *value = error_count_;
     } else if (function == portIndex_) {
         *value = port_;
+    } else if (function == numberOfBinsIndex_) {
+        *value = number_of_bins_;
+    } else if (function == maxBinsIndex_) {
+        *value = 1000; // Default maximum bins
+    } else if (function >= binDisplayIndex_[0] && function <= binDisplayIndex_[4]) {
+        // Handle individual bin display parameters
+        int bin_index = -1;
+        for (int i = 0; i < 5; ++i) {
+            if (function == binDisplayIndex_[i]) {
+                bin_index = i;
+                break;
+            }
+        }
+        if (bin_index >= 0 && running_sum_ && bin_index < static_cast<int>(running_sum_->get_bin_size())) {
+            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                // Convert 64-bit to 32-bit (with overflow protection)
+                uint64_t val64 = running_sum_->get_bin_value_64(bin_index);
+                *value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
+            } else {
+                *value = static_cast<epicsInt32>(running_sum_->get_bin_value_32(bin_index));
+            }
+        } else {
+            *value = 0;
+        }
+    } else if (function >= histogramBinIndex_[0] && function <= histogramBinIndex_[9]) {
+        // Handle individual histogram bin parameters
+        int bin_index = -1;
+        for (int i = 0; i < 10; ++i) {
+            if (function == histogramBinIndex_[i]) {
+                bin_index = i;
+                break;
+            }
+        }
+        if (bin_index >= 0 && running_sum_ && bin_index < static_cast<int>(running_sum_->get_bin_size())) {
+            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                // Convert 64-bit to 32-bit (with overflow protection)
+                uint64_t val64 = running_sum_->get_bin_value_64(bin_index);
+                *value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
+            } else {
+                *value = static_cast<epicsInt32>(running_sum_->get_bin_value_32(bin_index));
+            }
+        } else {
+            *value = 0;
+        }
     } else {
         status = asynPortDriver::readInt32(pasynUser, value);
     }
@@ -1087,6 +1138,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     
     // Update individual bin parameters
     if (running_sum_) {
+        // Update histogram bin parameters (HISTOGRAM_BIN_0 to HISTOGRAM_BIN_9)
         for (int i = 0; i < 10 && i < static_cast<int>(running_sum_->get_bin_size()); ++i) {
             uint32_t bin_value;
             if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
@@ -1098,6 +1150,20 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             }
             setIntegerParam(histogramBinIndex_[i], static_cast<epicsInt32>(bin_value));
             callParamCallbacks(histogramBinIndex_[i]);
+        }
+        
+        // Update display bin parameters (BIN_0 to BIN_4)
+        for (int i = 0; i < 5 && i < static_cast<int>(running_sum_->get_bin_size()); ++i) {
+            uint32_t bin_value;
+            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                // Convert 64-bit to 32-bit (with overflow protection)
+                uint64_t val64 = running_sum_->get_bin_value_64(i);
+                bin_value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(val64);
+            } else {
+                bin_value = running_sum_->get_bin_value_32(i);
+            }
+            setIntegerParam(binDisplayIndex_[i], static_cast<epicsInt32>(bin_value));
+            callParamCallbacks(binDisplayIndex_[i]);
         }
         printf("DEBUG: Updated individual bin parameters\n");
     }

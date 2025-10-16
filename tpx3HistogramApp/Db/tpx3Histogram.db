@@ -93,6 +93,7 @@ record(ai, "$(P)$(R)ACQUISITION_RATE") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))ACQUISITION_RATE")
     field(PREC, "3")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)PROCESSING_TIME_MS") {
@@ -100,6 +101,7 @@ record(ai, "$(P)$(R)PROCESSING_TIME_MS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))PROCESSING_TIME")
     field(PREC, "3")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
@@ -107,6 +109,7 @@ record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))MEMORY_USAGE")
     field(PREC, "3")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)BIN_WIDTH_PS") {
@@ -114,6 +117,7 @@ record(ai, "$(P)$(R)BIN_WIDTH_PS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))BIN_WIDTH")
     field(PREC, "3")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)TOTAL_TIME_NS") {
@@ -121,6 +125,7 @@ record(ai, "$(P)$(R)TOTAL_TIME_NS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))TOTAL_TIME")
     field(PREC, "3")
+    field(SCAN, "I/O Intr")
 }
 
 record(stringin, "$(P)$(R)FILENAME") {
@@ -132,37 +137,42 @@ record(stringin, "$(P)$(R)FILENAME") {
 # Histogram bin records (first 5 bins for display)
 record(ai, "$(P)$(R)BIN_0") {
     field(DESC, "Histogram bin 0 value")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_0")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)BIN_1") {
     field(DESC, "Histogram bin 1 value")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_1")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)BIN_2") {
     field(DESC, "Histogram bin 2 value")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_2")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)BIN_3") {
     field(DESC, "Histogram bin 3 value")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_3")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)BIN_4") {
     field(DESC, "Histogram bin 4 value")
-    field(DTYP, "Soft Channel")
-    field(INP, "0")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))BIN_4")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 # Full histogram data array
@@ -171,6 +181,7 @@ record(ai, "$(P)$(R)NUMBER_OF_BINS") {
     field(DTYP, "asynInt32")
     field(INP, "@asyn($(PORT) $(ADDR))NUMBER_OF_BINS")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)$(R)MAX_BINS") {
@@ -178,6 +189,7 @@ record(ai, "$(P)$(R)MAX_BINS") {
     field(DTYP, "asynInt32")
     field(INP, "@asyn($(PORT) $(ADDR))MAX_BINS")
     field(PREC, "0")
+    field(SCAN, "I/O Intr")
 }
 
 # Individual histogram bin records
