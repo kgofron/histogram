@@ -355,7 +355,7 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>BinWidthLabel</name>
-        <text>Bin Width (ps):</text>
+        <text>Bin Width (ns):</text>
         <x>20</x>
         <y>85</y>
       </widget>
@@ -552,13 +552,12 @@
         <pv_name>$(P)$(R)HISTOGRAM_DATA</pv_name>
         <x>220</x>
         <y>80</y>
-        <width>400</width>
+        <width>1080</width>
         <height>30</height>
         <background_color>
           <color red="200" green="200" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="0" blue="128">
@@ -608,10 +607,27 @@
     <y>20</y>
     <width>1010</width>
     <height>840</height>
+    <x_axis>
+      <title>X</title>
+      <autoscale>false</autoscale>
+      <log_scale>false</log_scale>
+      <minimum>0.0</minimum>
+      <maximum>25.0</maximum>
+      <show_grid>false</show_grid>
+      <title_font>
+        <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+        </font>
+      </title_font>
+      <scale_font>
+        <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+        </font>
+      </scale_font>
+      <visible>true</visible>
+    </x_axis>
     <y_axes>
       <y_axis>
         <title>Y</title>
-        <autoscale>false</autoscale>
+        <autoscale>true</autoscale>
         <log_scale>false</log_scale>
         <minimum>0.0</minimum>
         <maximum>600.0</maximum>
