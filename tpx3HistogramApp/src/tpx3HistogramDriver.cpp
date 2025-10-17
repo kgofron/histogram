@@ -414,7 +414,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(acquisitionRateIndex_, 0.0);
     setDoubleParam(processingTimeIndex_, 0.0);
     setDoubleParam(memoryUsageIndex_, 0.0);
-    setDoubleParam(binWidthIndex_, 0.260);
+    setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e9);  // Default bin width in nanoseconds
     setDoubleParam(totalTimeIndex_, 260.0);
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
