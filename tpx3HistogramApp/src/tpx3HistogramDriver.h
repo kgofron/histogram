@@ -5,7 +5,6 @@
 #include <epicsMutex.h>
 #include <epicsEvent.h>
 #include <epicsThread.h>
-#include <epicsTime.h>
 #include <string>
 #include <vector>
 #include <cstdint>

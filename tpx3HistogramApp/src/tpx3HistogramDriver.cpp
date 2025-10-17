@@ -1,7 +1,6 @@
 #include "tpx3HistogramDriver.h"
 #include <epicsExport.h>
 #include <epicsThread.h>
-#include <epicsTime.h>
 #include <epicsString.h>
 #include <epicsStdio.h>
 #include <iocsh.h>
