@@ -19,8 +19,8 @@ tpx3Histogram_registerRecordDeviceDriver(pdbbase)
 # Configure the driver BEFORE loading database
 tpx3HistogramConfigure("TPX3_PORT", 0)
 
-# Load the database records
-dbLoadRecords("../../db/tpx3Histogram.db", "P=$(Sys),R=$(Dev),PORT=TPX3_PORT,ADDR=0,TIMEOUT=1.0")
+# Load the database records with configurable array parameters
+dbLoadRecords("../../db/tpx3Histogram.db", "P=$(Sys),R=$(Dev),PORT=TPX3_PORT,ADDR=0,TIMEOUT=1.0,TYPE=Int32,FTVL=LONG,NELEMENTS=1000")
 
 # Initialize records
 iocInit()
