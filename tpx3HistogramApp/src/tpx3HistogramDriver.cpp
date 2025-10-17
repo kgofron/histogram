@@ -1125,7 +1125,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     epicsMutexLock(mutex_);
     
     if (!running_sum_) {
-        // Initialize running sum with same bin size
+        // Initialize running sum with same bin size as first frame
         running_sum_ = std::make_unique<HistogramData>(
             frame_data.get_bin_size(), 
             HistogramData::DataType::RUNNING_SUM
@@ -1135,10 +1135,49 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         for (size_t i = 0; i < frame_data.get_bin_edges().size(); ++i) {
             running_sum_->set_bin_edge(i, frame_data.get_bin_edges()[i]);
         }
+        
+        printf("DEBUG: Initialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
+    }
+    
+    // Check if bin sizes match
+    if (running_sum_->get_bin_size() != frame_data.get_bin_size()) {
+        printf("WARNING: Bin size mismatch! Running sum has %zu bins, frame has %zu bins. Reinitializing running sum.\n", 
+               running_sum_->get_bin_size(), frame_data.get_bin_size());
+        
+        // Reinitialize running sum with new bin size
+        running_sum_ = std::make_unique<HistogramData>(
+            frame_data.get_bin_size(), 
+            HistogramData::DataType::RUNNING_SUM
+        );
+        
+        // Copy bin edges from frame data
+        for (size_t i = 0; i < frame_data.get_bin_edges().size(); ++i) {
+            running_sum_->set_bin_edge(i, frame_data.get_bin_edges()[i]);
+        }
+        
+        printf("DEBUG: Reinitialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
+        
+        // Reset frame count since we're starting with new bin configuration
+        frame_count_ = 0;
+        total_counts_ = 0;
+        
+        // Update parameters
+        setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
+        setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
+        callParamCallbacks(frameCountIndex_);
+        callParamCallbacks(totalCountsIndex_);
     }
     
     // Add frame data to running sum
-    running_sum_->add_histogram(frame_data);
+    try {
+        running_sum_->add_histogram(frame_data);
+    } catch (const std::exception& e) {
+        printf("ERROR: Failed to add histogram: %s\n", e.what());
+        error_count_++;
+        setIntegerParam(errorCountIndex_, static_cast<epicsInt32>(error_count_));
+        epicsMutexUnlock(mutex_);
+        return;
+    }
     
     // Update frame count and total counts
     frame_count_++;
@@ -1170,8 +1209,10 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     
     // Update individual bin parameters
     if (running_sum_) {
+        size_t actual_bin_size = running_sum_->get_bin_size();
+        
         // Update histogram bin parameters (HISTOGRAM_BIN_0 to HISTOGRAM_BIN_9)
-        for (int i = 0; i < 10 && i < static_cast<int>(running_sum_->get_bin_size()); ++i) {
+        for (int i = 0; i < 10 && i < static_cast<int>(actual_bin_size); ++i) {
             uint32_t bin_value;
             if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
                 // Convert 64-bit to 32-bit (with overflow protection)
@@ -1184,8 +1225,14 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             callParamCallbacks(histogramBinIndex_[i]);
         }
         
+        // Zero out unused histogram bin parameters
+        for (int i = static_cast<int>(actual_bin_size); i < 10; ++i) {
+            setIntegerParam(histogramBinIndex_[i], 0);
+            callParamCallbacks(histogramBinIndex_[i]);
+        }
+        
         // Update display bin parameters (BIN_0 to BIN_4)
-        for (int i = 0; i < 5 && i < static_cast<int>(running_sum_->get_bin_size()); ++i) {
+        for (int i = 0; i < 5 && i < static_cast<int>(actual_bin_size); ++i) {
             uint32_t bin_value;
             if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
                 // Convert 64-bit to 32-bit (with overflow protection)
@@ -1197,7 +1244,18 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             setIntegerParam(binDisplayIndex_[i], static_cast<epicsInt32>(bin_value));
             callParamCallbacks(binDisplayIndex_[i]);
         }
-        printf("DEBUG: Updated individual bin parameters\n");
+        
+        // Zero out unused display bin parameters
+        for (int i = static_cast<int>(actual_bin_size); i < 5; ++i) {
+            setIntegerParam(binDisplayIndex_[i], 0);
+            callParamCallbacks(binDisplayIndex_[i]);
+        }
+        
+        // Update NUMBER_OF_BINS parameter to reflect actual bin size
+        setIntegerParam(numberOfBinsIndex_, static_cast<epicsInt32>(actual_bin_size));
+        callParamCallbacks(numberOfBinsIndex_);
+        
+        printf("DEBUG: Updated individual bin parameters (actual_bin_size=%zu)\n", actual_bin_size);
     }
     
     // Notify that histogram data has been updated
