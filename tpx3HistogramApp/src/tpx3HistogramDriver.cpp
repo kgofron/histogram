@@ -423,11 +423,13 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     
     // Create some test histogram data for debugging
     printf("DEBUG: Creating test histogram data\n");
+    fflush(stdout);
     running_sum_ = std::make_unique<HistogramData>(10, HistogramData::DataType::RUNNING_SUM);
     for (int i = 0; i < 10; ++i) {
         running_sum_->set_bin_value_64(i, i * 100);  // Test values: 0, 100, 200, 300, ...
     }
     printf("DEBUG: Test histogram data created with %zu bins\n", running_sum_->get_bin_size());
+    fflush(stdout);
     
     // Start monitor thread
     monitorThreadId_ = epicsThreadCreate("tpx3HistogramMonitor",
@@ -437,6 +439,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
                                         this);
     
     printf("Timepix3 Histogram Driver initialized on port %s\n", portName);
+    printf("DEBUG: Driver initialization complete - histogramDataIndex_=%d\n", histogramDataIndex_);
 }
 
 // Destructor
@@ -646,12 +649,10 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
     
     printf("DEBUG: readInt32Array called with function=%d, histogramDataIndex_=%d, nElements=%zu\n", 
            function, histogramDataIndex_, nElements);
-    
-    // Always print this to confirm the method is being called
-    printf("DEBUG: readInt32Array method entry - function=%d, nElements=%zu\n", function, nElements);
+    fflush(stdout);
     
     if (function == histogramDataIndex_) {
-        printf("DEBUG: Reading histogram data array\n");
+        printf("DEBUG: Processing histogram data array directly (no parent call for asynPortDriver)\n");
         epicsMutexLock(mutex_);
         
         if (running_sum_) {
@@ -680,8 +681,7 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
             }
             printf("\n");
         } else {
-            // No data yet, return zeros
-            printf("DEBUG: No running_sum_ data, returning zeros\n");
+            printf("DEBUG: No running_sum_ data, filling with zeros\n");
             for (size_t i = 0; i < nElements; ++i) {
                 value[i] = 0;
             }
@@ -690,9 +690,12 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
         
         epicsMutexUnlock(mutex_);
     } else {
-        printf("DEBUG: readInt32Array function %d not handled, calling parent\n", function);
+        printf("DEBUG: Function %d does not match histogramDataIndex_ %d, calling parent\n", function, histogramDataIndex_);
         status = asynPortDriver::readInt32Array(pasynUser, value, nElements, nIn);
     }
+    
+    printf("DEBUG: readInt32Array returning status=%d, nIn=%zu\n", status, *nIn);
+    fflush(stdout);
     
     return status;
 }
@@ -968,18 +971,26 @@ extern "C" void performTpx3HistogramCleanup()
 // Configuration function
 extern "C" int tpx3HistogramConfigure(const char* portName, int maxAddr)
 {
+    printf("DEBUG: tpx3HistogramConfigure called with portName=%s, maxAddr=%d\n", portName, maxAddr);
+    fflush(stdout);
+    
     if (g_driver) {
-        printf("Driver already configured\n");
+        printf("DEBUG: Driver already configured\n");
+        fflush(stdout);
         return -1;
     }
     
+    printf("DEBUG: Creating new tpx3HistogramDriver instance\n");
+    fflush(stdout);
     g_driver = new tpx3HistogramDriver(portName, maxAddr);
     if (!g_driver) {
-        printf("Timepix3 Histogram Driver configured on port %s\n", portName);
-        return 0;
+        printf("ERROR: Failed to create tpx3HistogramDriver\n");
+        fflush(stdout);
+        return -1;
     }
     
-    printf("Timepix3 Histogram Driver configured on port %s\n", portName);
+    printf("DEBUG: Timepix3 Histogram Driver configured on port %s\n", portName);
+    fflush(stdout);
     return 0;
 }
 
@@ -1190,11 +1201,28 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     }
     
     // Notify that histogram data has been updated
-    printf("DEBUG: About to call callParamCallbacks for histogramDataIndex_=%d\n", histogramDataIndex_);
+    printf("DEBUG: About to push histogram array data via doCallbacksInt32Array\n");
     
-    // Call parameter callbacks for the histogram data array
-    callParamCallbacks(histogramDataIndex_);
-    printf("DEBUG: Finished callParamCallbacks for histogramDataIndex_\n");
+    // For array parameters, we need to push the data using doCallbacksInt32Array
+    if (running_sum_) {
+        size_t bin_size = running_sum_->get_bin_size();
+        std::vector<epicsInt32> array_data(bin_size);
+        
+        for (size_t i = 0; i < bin_size; ++i) {
+            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
+                uint64_t val64 = running_sum_->get_bin_value_64(i);
+                array_data[i] = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
+            } else {
+                array_data[i] = static_cast<epicsInt32>(running_sum_->get_bin_value_32(i));
+            }
+        }
+        
+        printf("DEBUG: Pushing %zu array elements (first 5: %d %d %d %d %d)\n", 
+               bin_size, array_data[0], array_data[1], array_data[2], array_data[3], array_data[4]);
+        
+        doCallbacksInt32Array(array_data.data(), bin_size, histogramDataIndex_, 0);
+    }
+    printf("DEBUG: Finished pushing histogram array data\n");
     
     // Save updated running sum
     saveRunningSum();
