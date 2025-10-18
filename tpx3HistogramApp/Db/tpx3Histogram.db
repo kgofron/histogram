@@ -192,86 +192,6 @@ record(ai, "$(P)$(R)MAX_BINS") {
     field(SCAN, "I/O Intr")
 }
 
-# Individual histogram bin records
-record(ai, "$(P)$(R)HISTOGRAM_BIN_0") {
-    field(DESC, "Histogram bin 0 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_0")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_1") {
-    field(DESC, "Histogram bin 1 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_1")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_2") {
-    field(DESC, "Histogram bin 2 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_2")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_3") {
-    field(DESC, "Histogram bin 3 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_3")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_4") {
-    field(DESC, "Histogram bin 4 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_4")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_5") {
-    field(DESC, "Histogram bin 5 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_5")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_6") {
-    field(DESC, "Histogram bin 6 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_6")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_7") {
-    field(DESC, "Histogram bin 7 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_7")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_8") {
-    field(DESC, "Histogram bin 8 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_8")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)HISTOGRAM_BIN_9") {
-    field(DESC, "Histogram bin 9 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_BIN_9")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
 
 # Waveform record for histogram data array (configurable size)
 record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
@@ -283,5 +203,4 @@ record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
     field(SCAN, "I/O Intr")
 }
 
-# Note: Individual histogram bin records (HISTOGRAM_BIN_0 through HISTOGRAM_BIN_9) 
-# are also available for individual bin access.
+# Note: The complete histogram data is available via the HISTOGRAM_DATA waveform record.

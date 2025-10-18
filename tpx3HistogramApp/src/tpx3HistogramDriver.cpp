@@ -262,7 +262,7 @@ bool NetworkClient::receive_exact(char* buffer, size_t size) {
 }
 
 // Parameter definitions
-#define NUM_PARAMS 22
+#define NUM_PARAMS 12
 
 // Global driver instance
 static tpx3HistogramDriver* g_driver = NULL;
@@ -365,20 +365,9 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("BIN_3", asynParamInt32, &binDisplayIndex_[3]);
     createParam("BIN_4", asynParamInt32, &binDisplayIndex_[4]);
     
-    // Create individual bin parameters
-    for (int i = 0; i < 10; ++i) {
-        char paramName[32];
-        snprintf(paramName, sizeof(paramName), "HISTOGRAM_BIN_%d", i);
-        createParam(paramName, asynParamInt32, &histogramBinIndex_[i]);
-    }
     
     printf("DEBUG: Parameter indices - histogramDataIndex_=%d, numberOfBinsIndex_=%d\n", 
            histogramDataIndex_, numberOfBinsIndex_);
-    printf("DEBUG: Individual bin indices: ");
-    for (int i = 0; i < 10; ++i) {
-        printf("%d ", histogramBinIndex_[i]);
-    }
-    printf("\n");
     printf("DEBUG: Display bin indices: ");
     for (int i = 0; i < 5; ++i) {
         printf("%d ", binDisplayIndex_[i]);
@@ -550,26 +539,6 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         int bin_index = -1;
         for (int i = 0; i < 5; ++i) {
             if (function == binDisplayIndex_[i]) {
-                bin_index = i;
-                break;
-            }
-        }
-        if (bin_index >= 0 && running_sum_ && bin_index < static_cast<int>(running_sum_->get_bin_size())) {
-            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
-                // Convert 64-bit to 32-bit (with overflow protection)
-                uint64_t val64 = running_sum_->get_bin_value_64(bin_index);
-                *value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
-            } else {
-                *value = static_cast<epicsInt32>(running_sum_->get_bin_value_32(bin_index));
-            }
-        } else {
-            *value = 0;
-        }
-    } else if (function >= histogramBinIndex_[0] && function <= histogramBinIndex_[9]) {
-        // Handle individual histogram bin parameters
-        int bin_index = -1;
-        for (int i = 0; i < 10; ++i) {
-            if (function == histogramBinIndex_[i]) {
                 bin_index = i;
                 break;
             }
@@ -1206,29 +1175,9 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         callParamCallbacks(statusIndex_);
     }
     
-    // Update individual bin parameters
+    // Update display bin parameters
     if (running_sum_) {
         size_t actual_bin_size = running_sum_->get_bin_size();
-        
-        // Update histogram bin parameters (HISTOGRAM_BIN_0 to HISTOGRAM_BIN_9)
-        for (int i = 0; i < 10 && i < static_cast<int>(actual_bin_size); ++i) {
-            uint32_t bin_value;
-            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
-                // Convert 64-bit to 32-bit (with overflow protection)
-                uint64_t val64 = running_sum_->get_bin_value_64(i);
-                bin_value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(val64);
-            } else {
-                bin_value = running_sum_->get_bin_value_32(i);
-            }
-            setIntegerParam(histogramBinIndex_[i], static_cast<epicsInt32>(bin_value));
-            callParamCallbacks(histogramBinIndex_[i]);
-        }
-        
-        // Zero out unused histogram bin parameters
-        for (int i = static_cast<int>(actual_bin_size); i < 10; ++i) {
-            setIntegerParam(histogramBinIndex_[i], 0);
-            callParamCallbacks(histogramBinIndex_[i]);
-        }
         
         // Update display bin parameters (BIN_0 to BIN_4)
         for (int i = 0; i < 5 && i < static_cast<int>(actual_bin_size); ++i) {
@@ -1254,7 +1203,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         setIntegerParam(numberOfBinsIndex_, static_cast<epicsInt32>(actual_bin_size));
         callParamCallbacks(numberOfBinsIndex_);
         
-        printf("DEBUG: Updated individual bin parameters (actual_bin_size=%zu)\n", actual_bin_size);
+        printf("DEBUG: Updated display bin parameters (actual_bin_size=%zu)\n", actual_bin_size);
     }
     
     // Notify that histogram data has been updated
