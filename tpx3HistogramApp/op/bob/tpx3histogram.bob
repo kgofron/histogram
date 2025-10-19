@@ -4,10 +4,12 @@
   <macros>
     <R>Histogram:</R>
   </macros>
+  <width>1400</width>
+  <height>1000</height>
   <widget type="group" version="3.0.0">
     <name>TPX3_Histogram_Control</name>
     <width>1400</width>
-    <height>1100</height>
+    <height>1000</height>
     <widget type="label" version="2.0.0">
       <name>Title</name>
       <text>Timepix3 Histogram IOC Control Panel</text>
@@ -15,6 +17,10 @@
       <y>20</y>
       <width>1300</width>
       <height>40</height>
+      <font>
+        <font family="Liberation Sans" style="BOLD" size="28.0">
+        </font>
+      </font>
       <foreground_color>
         <color red="255" green="255" blue="255">
         </color>
@@ -23,6 +29,7 @@
         <color red="30" green="144" blue="255">
         </color>
       </background_color>
+      <transparent>false</transparent>
     </widget>
     <widget type="group" version="3.0.0">
       <name>ConnectionControl</name>
@@ -222,6 +229,7 @@
       <x>10</x>
       <y>360</y>
       <width>1350</width>
+      <height>160</height>
       <widget type="label" version="2.0.0">
         <name>DataDisplayLabel</name>
         <text>Data Display</text>
@@ -296,7 +304,9 @@
         <pv_name>$(P)$(R)ACQUISITION_RATE</pv_name>
         <x>620</x>
         <y>40</y>
+        <width>100</width>
         <height>30</height>
+        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
@@ -319,7 +329,9 @@
         <pv_name>$(P)$(R)PROCESSING_TIME_MS</pv_name>
         <x>880</x>
         <y>40</y>
+        <width>100</width>
         <height>30</height>
+        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
@@ -342,7 +354,9 @@
         <pv_name>$(P)$(R)MEMORY_USAGE_MB</pv_name>
         <x>1140</x>
         <y>40</y>
+        <width>100</width>
         <height>30</height>
+        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
@@ -364,6 +378,7 @@
         <pv_name>$(P)$(R)BIN_WIDTH_NS</pv_name>
         <x>120</x>
         <y>80</y>
+        <width>120</width>
         <height>30</height>
         <background_color>
           <color red="255" green="200" blue="255">
@@ -387,6 +402,7 @@
         <pv_name>$(P)$(R)TOTAL_TIME_NS</pv_name>
         <x>360</x>
         <y>80</y>
+        <width>120</width>
         <height>30</height>
         <background_color>
           <color red="255" green="200" blue="255">
@@ -402,7 +418,7 @@
     <widget type="group" version="3.0.0">
       <name>FrameData</name>
       <x>10</x>
-      <y>580</y>
+      <y>540</y>
       <width>1350</width>
       <height>120</height>
       <widget type="label" version="2.0.0">
@@ -523,12 +539,12 @@
     <widget type="group" version="3.0.0">
       <name>HistogramBins</name>
       <x>10</x>
-      <y>720</y>
+      <y>680</y>
       <width>1350</width>
-      <height>180</height>
+      <height>150</height>
       <widget type="label" version="2.0.0">
         <name>HistogramBinsLabel</name>
-        <text>Histogram Bins (First 5)</text>
+        <text>Histogram Data Arrays</text>
         <x>10</x>
         <y>10</y>
         <width>200</width>
@@ -543,137 +559,17 @@
         </border_color>
       </widget>
       <widget type="label" version="2.0.0">
-        <name>Bin0Label</name>
-        <text>Bin 0:</text>
-        <x>20</x>
-        <y>45</y>
-        <width>60</width>
-      </widget>
-      <widget type="textupdate" version="2.0.0">
-        <name>Bin0Display</name>
-        <pv_name>$(P)$(R)BIN_0</pv_name>
-        <x>80</x>
-        <y>40</y>
-        <width>120</width>
-        <height>30</height>
-        <background_color>
-          <color red="255" green="255" blue="200">
-          </color>
-        </background_color>
-        <border_width>1</border_width>
-        <border_color>
-          <color red="128" green="128" blue="0">
-          </color>
-        </border_color>
-      </widget>
-      <widget type="label" version="2.0.0">
-        <name>Bin1Label</name>
-        <text>Bin 1:</text>
-        <x>220</x>
-        <y>45</y>
-        <width>60</width>
-      </widget>
-      <widget type="textupdate" version="2.0.0">
-        <name>Bin1Display</name>
-        <pv_name>$(P)$(R)BIN_1</pv_name>
-        <x>280</x>
-        <y>40</y>
-        <width>120</width>
-        <height>30</height>
-        <background_color>
-          <color red="255" green="255" blue="200">
-          </color>
-        </background_color>
-        <border_width>1</border_width>
-        <border_color>
-          <color red="128" green="128" blue="0">
-          </color>
-        </border_color>
-      </widget>
-      <widget type="label" version="2.0.0">
-        <name>Bin2Label</name>
-        <text>Bin 2:</text>
-        <x>420</x>
-        <y>45</y>
-        <width>60</width>
-      </widget>
-      <widget type="textupdate" version="2.0.0">
-        <name>Bin2Display</name>
-        <pv_name>$(P)$(R)BIN_2</pv_name>
-        <x>480</x>
-        <y>40</y>
-        <width>120</width>
-        <height>30</height>
-        <background_color>
-          <color red="255" green="255" blue="200">
-          </color>
-        </background_color>
-        <border_width>1</border_width>
-        <border_color>
-          <color red="128" green="128" blue="0">
-          </color>
-        </border_color>
-      </widget>
-      <widget type="label" version="2.0.0">
-        <name>Bin3Label</name>
-        <text>Bin 3:</text>
-        <x>620</x>
-        <y>45</y>
-        <width>60</width>
-      </widget>
-      <widget type="textupdate" version="2.0.0">
-        <name>Bin3Display</name>
-        <pv_name>$(P)$(R)BIN_3</pv_name>
-        <x>680</x>
-        <y>40</y>
-        <width>120</width>
-        <height>30</height>
-        <background_color>
-          <color red="255" green="255" blue="200">
-          </color>
-        </background_color>
-        <border_width>1</border_width>
-        <border_color>
-          <color red="128" green="128" blue="0">
-          </color>
-        </border_color>
-      </widget>
-      <widget type="label" version="2.0.0">
-        <name>Bin4Label</name>
-        <text>Bin 4:</text>
-        <x>820</x>
-        <y>45</y>
-        <width>60</width>
-      </widget>
-      <widget type="textupdate" version="2.0.0">
-        <name>Bin4Display</name>
-        <pv_name>$(P)$(R)BIN_4</pv_name>
-        <x>880</x>
-        <y>40</y>
-        <width>120</width>
-        <height>30</height>
-        <background_color>
-          <color red="255" green="255" blue="200">
-          </color>
-        </background_color>
-        <border_width>1</border_width>
-        <border_color>
-          <color red="128" green="128" blue="0">
-          </color>
-        </border_color>
-      </widget>
-      <widget type="label" version="2.0.0">
         <name>HistogramDataLabel</name>
         <text>Full Histogram Data (1000 bins):</text>
         <x>20</x>
-        <y>85</y>
+        <y>40</y>
         <width>200</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>HistogramDataDisplay</name>
         <pv_name>$(P)$(R)HISTOGRAM_DATA</pv_name>
         <x>220</x>
-        <y>80</y>
+        <y>40</y>
         <width>1080</width>
         <height>30</height>
         <background_color>
@@ -690,14 +586,14 @@
         <name>HistogramTimeLabel</name>
         <text>Histogram Time Axis (ms):</text>
         <x>20</x>
-        <y>125</y>
+        <y>80</y>
         <width>200</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>HistogramTimeDisplay</name>
         <pv_name>$(P)$(R)HISTOGRAM_TIME_MS</pv_name>
         <x>220</x>
-        <y>120</y>
+        <y>80</y>
         <width>1080</width>
         <height>30</height>
         <background_color>
@@ -715,9 +611,9 @@
     <widget type="group" version="3.0.0">
       <name>PerformanceMonitoring</name>
       <x>10</x>
-      <y>920</y>
+      <y>850</y>
       <width>1350</width>
-      <height>150</height>
+      <height>120</height>
       <widget type="label" version="2.0.0">
         <name>PerformanceMonitoringLabel</name>
         <text>Performance Monitoring</text>
@@ -752,8 +648,8 @@
     <name>X/Y Plot_1</name>
     <x>1410</x>
     <y>20</y>
-    <width>1010</width>
-    <height>840</height>
+    <width>800</width>
+    <height>500</height>
     <x_axis>
       <title>ToF [ms]</title>
       <autoscale>true</autoscale>
@@ -818,9 +714,9 @@
   <widget type="xyplot" version="3.0.0">
     <name>X/Y Plot_2</name>
     <x>1410</x>
-    <y>900</y>
-    <width>1010</width>
-    <height>840</height>
+    <y>530</y>
+    <width>800</width>
+    <height>500</height>
     <x_axis>
       <title>ToF [ms]</title>
       <autoscale>true</autoscale>
