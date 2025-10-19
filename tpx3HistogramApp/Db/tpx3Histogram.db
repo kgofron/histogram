@@ -66,11 +66,10 @@ record(ai, "$(P)$(R)FRAME_COUNT") {
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)$(R)TOTAL_COUNTS") {
+record(int64in, "$(P)$(R)TOTAL_COUNTS") {
     field(DESC, "Total counts in histogram")
-    field(DTYP, "asynInt32")
+    field(DTYP, "asynInt64")
     field(INP, "@asyn($(PORT) $(ADDR))TOTAL_COUNTS")
-    field(PREC, "0")
     field(SCAN, "I/O Intr")
 }
 

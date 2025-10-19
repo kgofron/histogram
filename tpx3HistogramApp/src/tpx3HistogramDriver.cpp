@@ -301,8 +301,8 @@ std::string createStatusMessage(const std::string& baseMessage, const std::strin
 // Constructor
 tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     : asynPortDriver(portName, maxAddr, NUM_PARAMS,
-                     asynInt32Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
-                     asynInt32Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
+                     asynInt32Mask | asynInt64Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
+                     asynInt32Mask | asynInt64Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
                      ASYN_CANBLOCK, 1, 0, 0),
       host_(DEFAULT_HOST),
       port_(DEFAULT_PORT),
@@ -347,7 +347,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("HOST", asynParamOctet, &hostIndex_);
     createParam("PORT", asynParamInt32, &portIndex_);
     createParam("FRAME_COUNT", asynParamInt32, &frameCountIndex_);
-    createParam("TOTAL_COUNTS", asynParamInt32, &totalCountsIndex_);
+    createParam("TOTAL_COUNTS", asynParamInt64, &totalCountsIndex_);
     createParam("CONNECTED", asynParamInt32, &connectedIndex_);
 
     createParam("STATUS", asynParamOctet, &statusIndex_);
@@ -405,7 +405,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     // Set initial values
     setIntegerParam(connectedIndex_, 0);
     setIntegerParam(frameCountIndex_, 0);
-    setIntegerParam(totalCountsIndex_, 0);
+    setInteger64Param(totalCountsIndex_, 0);
     setIntegerParam(errorCountIndex_, 0);
     setDoubleParam(acquisitionRateIndex_, 0.0);
     setDoubleParam(processingTimeIndex_, 0.0);
@@ -545,8 +545,6 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = connected_ ? 1 : 0;
     } else if (function == frameCountIndex_) {
         *value = static_cast<epicsInt32>(frame_count_);
-    } else if (function == totalCountsIndex_) {
-        *value = static_cast<epicsInt32>(total_counts_);
     } else     if (function == errorCountIndex_) {
         *value = error_count_;
     } else if (function == portIndex_) {
@@ -563,6 +561,25 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = frame_bin_offset_;
     } else {
         status = asynPortDriver::readInt32(pasynUser, value);
+    }
+    
+    return status;
+}
+
+asynStatus tpx3HistogramDriver::readInt64(asynUser *pasynUser, epicsInt64 *value)
+{
+    int function = pasynUser->reason;
+    asynStatus status = asynSuccess;
+    
+    printf("DEBUG: readInt64 called with function=%d, totalCountsIndex_=%d\n", function, totalCountsIndex_);
+    fflush(stdout);
+    
+    if (function == totalCountsIndex_) {
+        *value = static_cast<epicsInt64>(total_counts_);
+        printf("DEBUG: readInt64 returning total_counts_=%llu\n", (unsigned long long)total_counts_);
+        fflush(stdout);
+    } else {
+        status = asynPortDriver::readInt64(pasynUser, value);
     }
     
     return status;
@@ -747,7 +764,7 @@ void tpx3HistogramDriver::reset()
     total_read_ = 0;
     
     setIntegerParam(frameCountIndex_, 0);
-    setIntegerParam(totalCountsIndex_, 0);
+    setInteger64Param(totalCountsIndex_, 0);
     status_ = createStatusMessage("Histogram data reset", host_, port_, 0, 0, error_count_);
     setStringParam(statusIndex_, status_.c_str());
     
@@ -1025,7 +1042,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         int bin_size = j["binSize"];
         int bin_width = j["binWidth"];
         int bin_offset = j["binOffset"];
-        
+
         // Extract additional frame data
         double time_at_frame = j["timeAtFrame"];
         
@@ -1187,14 +1204,14 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         
         // Update parameters
         setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
-        setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
+        setInteger64Param(totalCountsIndex_, static_cast<epicsInt64>(total_counts_));
         callParamCallbacks(frameCountIndex_);
         callParamCallbacks(totalCountsIndex_);
     }
     
     // Add frame data to running sum
     try {
-        running_sum_->add_histogram(frame_data);
+    running_sum_->add_histogram(frame_data);
     } catch (const std::exception& e) {
         printf("ERROR: Failed to add histogram: %s\n", e.what());
         error_count_++;
@@ -1216,7 +1233,9 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     
     // Update parameters
     setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
-    setIntegerParam(totalCountsIndex_, static_cast<epicsInt32>(total_counts_));
+    setInteger64Param(totalCountsIndex_, static_cast<epicsInt64>(total_counts_));
+    printf("DEBUG: Set totalCountsIndex_=%d to value=%llu\n", totalCountsIndex_, (unsigned long long)total_counts_);
+    fflush(stdout);
     
     // Notify that frame count and total counts have been updated
     callParamCallbacks(frameCountIndex_);
