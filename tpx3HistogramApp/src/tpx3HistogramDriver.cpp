@@ -359,6 +359,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("TOTAL_TIME", asynParamFloat64, &totalTimeIndex_);
     createParam("FILENAME", asynParamOctet, &filenameIndex_);
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
+    createParam("HISTOGRAM_FRAME", asynParamInt32Array, &histogramFrameIndex_);
     createParam("HISTOGRAM_TIME_MS", asynParamFloat64Array, &histogramTimeMsIndex_);
     printf("DEBUG: Created HISTOGRAM_TIME_MS parameter with index %d\n", histogramTimeMsIndex_);
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
@@ -378,8 +379,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("BIN_4", asynParamInt32, &binDisplayIndex_[4]);
     
     
-    printf("DEBUG: Parameter indices - histogramDataIndex_=%d, histogramTimeMsIndex_=%d, numberOfBinsIndex_=%d\n", 
-           histogramDataIndex_, histogramTimeMsIndex_, numberOfBinsIndex_);
+    printf("DEBUG: Parameter indices - histogramDataIndex_=%d, histogramFrameIndex_=%d, histogramTimeMsIndex_=%d, numberOfBinsIndex_=%d\n", 
+           histogramDataIndex_, histogramFrameIndex_, histogramTimeMsIndex_, numberOfBinsIndex_);
     printf("DEBUG: Display bin indices: ");
     for (int i = 0; i < 5; ++i) {
         printf("%d ", binDisplayIndex_[i]);
@@ -404,6 +405,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     printf("  TOTAL_TIME=%d\n", totalTimeIndex_);
     printf("  FILENAME=%d\n", filenameIndex_);
     printf("  HISTOGRAM_DATA=%d\n", histogramDataIndex_);
+    printf("  HISTOGRAM_FRAME=%d\n", histogramFrameIndex_);
     printf("  HISTOGRAM_TIME_MS=%d\n", histogramTimeMsIndex_);
     printf("  NUMBER_OF_BINS=%d\n", numberOfBinsIndex_);
     printf("  MAX_BINS=%d\n", maxBinsIndex_);
@@ -1309,6 +1311,15 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
                bin_size, array_data[0], array_data[1], array_data[2], array_data[3], array_data[4]);
         
         doCallbacksInt32Array(array_data.data(), bin_size, histogramDataIndex_, 0);
+        
+        // Also push the individual frame data (not accumulated)
+        printf("DEBUG: Pushing individual frame data via doCallbacksInt32Array\n");
+        std::vector<epicsInt32> frame_array_data(bin_size);
+        for (size_t i = 0; i < bin_size; ++i) {
+            frame_array_data[i] = static_cast<epicsInt32>(frame_data.get_bin_value_32(i));
+        }
+        doCallbacksInt32Array(frame_array_data.data(), bin_size, histogramFrameIndex_, 0);
+        printf("DEBUG: Finished pushing frame data\n");
         
             // Also calculate and push the time axis data (in milliseconds)
             histogram_time_data_.resize(bin_size);

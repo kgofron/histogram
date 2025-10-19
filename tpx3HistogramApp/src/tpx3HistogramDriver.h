@@ -193,6 +193,7 @@ private:
     int totalTimeIndex_;
     int filenameIndex_;
     int histogramDataIndex_;
+    int histogramFrameIndex_;    // Individual frame histogram data
     int histogramTimeMsIndex_;   // Time axis for histogram in milliseconds
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record

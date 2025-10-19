@@ -228,9 +228,19 @@ record(ai, "$(P)$(R)MAX_BINS") {
 
 # Waveform record for histogram data array (configurable size)
 record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
-    field(DESC, "Histogram data array")
+    field(DESC, "Histogram data array (accumulated)")
     field(DTYP, "asyn$(TYPE)ArrayIn")
     field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_DATA")
+    field(FTVL, "$(FTVL)")
+    field(NELM, "$(NELEMENTS)")
+    field(SCAN, "I/O Intr")
+}
+
+# Waveform record for individual frame histogram data (configurable size)
+record(waveform, "$(P)$(R)HISTOGRAM_FRAME") {
+    field(DESC, "Histogram data array (individual frame)")
+    field(DTYP, "asyn$(TYPE)ArrayIn")
+    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_FRAME")
     field(FTVL, "$(FTVL)")
     field(NELM, "$(NELEMENTS)")
     field(SCAN, "I/O Intr")
