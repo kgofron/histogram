@@ -372,20 +372,12 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("FRAME_BIN_OFFSET", asynParamInt32, &frameBinOffsetIndex_);
     
     // Create individual bin parameters for display
-    createParam("BIN_0", asynParamInt32, &binDisplayIndex_[0]);
-    createParam("BIN_1", asynParamInt32, &binDisplayIndex_[1]);
-    createParam("BIN_2", asynParamInt32, &binDisplayIndex_[2]);
-    createParam("BIN_3", asynParamInt32, &binDisplayIndex_[3]);
-    createParam("BIN_4", asynParamInt32, &binDisplayIndex_[4]);
+    // Individual bin display parameters removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
     
     
     printf("DEBUG: Parameter indices - histogramDataIndex_=%d, histogramFrameIndex_=%d, histogramTimeMsIndex_=%d, numberOfBinsIndex_=%d\n", 
            histogramDataIndex_, histogramFrameIndex_, histogramTimeMsIndex_, numberOfBinsIndex_);
-    printf("DEBUG: Display bin indices: ");
-    for (int i = 0; i < 5; ++i) {
-        printf("%d ", binDisplayIndex_[i]);
-    }
-    printf("\n");
+    // Display bin indices removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
     printf("DEBUG: All parameter indices:\n");
     printf("  CONNECTION_STATE=%d\n", connectionStateIndex_);
     printf("  RESET=%d\n", resetIndex_);
@@ -569,26 +561,6 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = frame_bin_width_;
     } else if (function == frameBinOffsetIndex_) {
         *value = frame_bin_offset_;
-    } else if (function >= binDisplayIndex_[0] && function <= binDisplayIndex_[4]) {
-        // Handle individual bin display parameters
-        int bin_index = -1;
-        for (int i = 0; i < 5; ++i) {
-            if (function == binDisplayIndex_[i]) {
-                bin_index = i;
-                break;
-            }
-        }
-        if (bin_index >= 0 && running_sum_ && bin_index < static_cast<int>(running_sum_->get_bin_size())) {
-            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
-                // Convert 64-bit to 32-bit (with overflow protection)
-                uint64_t val64 = running_sum_->get_bin_value_64(bin_index);
-                *value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(val64);
-            } else {
-                *value = static_cast<epicsInt32>(running_sum_->get_bin_value_32(bin_index));
-            }
-        } else {
-            *value = 0;
-        }
     } else {
         status = asynPortDriver::readInt32(pasynUser, value);
     }
@@ -1263,31 +1235,11 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     if (running_sum_) {
         size_t actual_bin_size = running_sum_->get_bin_size();
         
-        // Update display bin parameters (BIN_0 to BIN_4)
-        for (int i = 0; i < 5 && i < static_cast<int>(actual_bin_size); ++i) {
-            uint32_t bin_value;
-            if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
-                // Convert 64-bit to 32-bit (with overflow protection)
-                uint64_t val64 = running_sum_->get_bin_value_64(i);
-                bin_value = (val64 > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(val64);
-            } else {
-                bin_value = running_sum_->get_bin_value_32(i);
-            }
-            setIntegerParam(binDisplayIndex_[i], static_cast<epicsInt32>(bin_value));
-            callParamCallbacks(binDisplayIndex_[i]);
-        }
-        
-        // Zero out unused display bin parameters
-        for (int i = static_cast<int>(actual_bin_size); i < 5; ++i) {
-            setIntegerParam(binDisplayIndex_[i], 0);
-            callParamCallbacks(binDisplayIndex_[i]);
-        }
-        
         // Update NUMBER_OF_BINS parameter to reflect actual bin size
         setIntegerParam(numberOfBinsIndex_, static_cast<epicsInt32>(actual_bin_size));
         callParamCallbacks(numberOfBinsIndex_);
         
-        printf("DEBUG: Updated display bin parameters (actual_bin_size=%zu)\n", actual_bin_size);
+        printf("DEBUG: Updated NUMBER_OF_BINS parameter (actual_bin_size=%zu)\n", actual_bin_size);
     }
     
     // Notify that histogram data has been updated

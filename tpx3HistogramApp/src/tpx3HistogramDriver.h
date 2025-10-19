@@ -197,7 +197,7 @@ private:
     int histogramTimeMsIndex_;   // Time axis for histogram in milliseconds
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
-    int binDisplayIndex_[5];     // Individual bin display parameters (BIN_0 to BIN_4)
+    // Individual bin display parameters removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
     
     // Frame data parameters from JSON
     int timeAtFrameIndex_;       // Timestamp at frame in nanoseconds

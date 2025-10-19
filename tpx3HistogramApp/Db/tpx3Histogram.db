@@ -167,46 +167,7 @@ record(ai, "$(P)$(R)FRAME_BIN_OFFSET") {
     field(SCAN, "I/O Intr")
 }
 
-# Histogram bin records (first 5 bins for display)
-record(ai, "$(P)$(R)BIN_0") {
-    field(DESC, "Histogram bin 0 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))BIN_0")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)BIN_1") {
-    field(DESC, "Histogram bin 1 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))BIN_1")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)BIN_2") {
-    field(DESC, "Histogram bin 2 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))BIN_2")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)BIN_3") {
-    field(DESC, "Histogram bin 3 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))BIN_3")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
-
-record(ai, "$(P)$(R)BIN_4") {
-    field(DESC, "Histogram bin 4 value")
-    field(DTYP, "asynInt32")
-    field(INP, "@asyn($(PORT) $(ADDR))BIN_4")
-    field(PREC, "0")
-    field(SCAN, "I/O Intr")
-}
+# Individual bin display parameters removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
 
 # Full histogram data array
 record(ai, "$(P)$(R)NUMBER_OF_BINS") {
