@@ -236,4 +236,14 @@ record(waveform, "$(P)$(R)HISTOGRAM_DATA") {
     field(SCAN, "I/O Intr")
 }
 
+# Waveform record for histogram time axis in nanoseconds (configurable size)
+record(waveform, "$(P)$(R)HISTOGRAM_TIME_NS") {
+    field(DESC, "Histogram time axis in nanoseconds")
+    field(DTYP, "asynFloat64ArrayIn")
+    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_TIME_NS")
+    field(FTVL, "DOUBLE")
+    field(NELM, "$(NELEMENTS)")
+    field(SCAN, "I/O Intr")
+}
+
 # Note: The complete histogram data is available via the HISTOGRAM_DATA waveform record.

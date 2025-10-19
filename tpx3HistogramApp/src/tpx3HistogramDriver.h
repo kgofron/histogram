@@ -158,6 +158,7 @@ public:
     virtual asynStatus readOctet(asynUser *pasynUser, char *value, size_t maxChars, size_t *nActual, int *eomReason);
     virtual asynStatus readFloat64(asynUser *pasynUser, epicsFloat64 *value);
     virtual asynStatus readInt32Array(asynUser *pasynUser, epicsInt32 *value, size_t nElements, size_t *nIn);
+    virtual asynStatus readFloat64Array(asynUser *pasynUser, epicsFloat64 *value, size_t nElements, size_t *nIn);
 
     // Public methods
     void connect();
@@ -193,6 +194,7 @@ private:
     int totalTimeIndex_;
     int filenameIndex_;
     int histogramDataIndex_;
+    int histogramTimeNsIndex_;   // Time axis for histogram in nanoseconds
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
     int binDisplayIndex_[5];     // Individual bin display parameters (BIN_0 to BIN_4)
@@ -227,6 +229,9 @@ private:
     int frame_bin_size_;
     int frame_bin_width_;
     int frame_bin_offset_;
+    
+    // Time axis data for histogram plotting
+    std::vector<epicsFloat64> histogram_time_data_;
     
     // Threading and synchronization
     epicsMutexId mutex_;

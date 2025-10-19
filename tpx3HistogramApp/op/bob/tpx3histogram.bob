@@ -525,6 +525,7 @@
       <x>10</x>
       <y>720</y>
       <width>1350</width>
+      <height>180</height>
       <widget type="label" version="2.0.0">
         <name>HistogramBinsLabel</name>
         <text>Histogram Bins (First 5)</text>
@@ -685,11 +686,35 @@
           </color>
         </border_color>
       </widget>
+      <widget type="label" version="2.0.0">
+        <name>HistogramTimeLabel</name>
+        <text>Histogram Time Axis (ns):</text>
+        <x>20</x>
+        <y>125</y>
+        <width>200</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>HistogramTimeDisplay</name>
+        <pv_name>$(P)$(R)HISTOGRAM_TIME_NS</pv_name>
+        <x>220</x>
+        <y>120</y>
+        <width>1080</width>
+        <height>30</height>
+        <background_color>
+          <color red="255" green="200" blue="200">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="128" green="0" blue="0">
+          </color>
+        </border_color>
+      </widget>
     </widget>
     <widget type="group" version="3.0.0">
       <name>PerformanceMonitoring</name>
       <x>10</x>
-      <y>940</y>
+      <y>920</y>
       <width>1350</width>
       <height>150</height>
       <widget type="label" version="2.0.0">
