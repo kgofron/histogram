@@ -262,7 +262,7 @@ bool NetworkClient::receive_exact(char* buffer, size_t size) {
 }
 
 // Parameter definitions
-#define NUM_PARAMS 12
+#define NUM_PARAMS 16
 
 // Global driver instance
 static tpx3HistogramDriver* g_driver = NULL;
@@ -317,6 +317,10 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       bin_width_(384000),
       bin_offset_(0),
       number_of_bins_(10),
+      time_at_frame_(0.0),
+      frame_bin_size_(0),
+      frame_bin_width_(0),
+      frame_bin_offset_(0),
       error_count_(0),
       acquisition_rate_(0.0),
       processing_time_(0.0),
@@ -357,6 +361,12 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
     createParam("MAX_BINS", asynParamInt32, &maxBinsIndex_);
+    
+    // Create frame data parameters from JSON
+    createParam("TIME_AT_FRAME", asynParamFloat64, &timeAtFrameIndex_);
+    createParam("FRAME_BIN_SIZE", asynParamInt32, &frameBinSizeIndex_);
+    createParam("FRAME_BIN_WIDTH", asynParamInt32, &frameBinWidthIndex_);
+    createParam("FRAME_BIN_OFFSET", asynParamInt32, &frameBinOffsetIndex_);
     
     // Create individual bin parameters for display
     createParam("BIN_0", asynParamInt32, &binDisplayIndex_[0]);
@@ -534,6 +544,12 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = number_of_bins_;
     } else if (function == maxBinsIndex_) {
         *value = 1000; // Default maximum bins
+    } else if (function == frameBinSizeIndex_) {
+        *value = frame_bin_size_;
+    } else if (function == frameBinWidthIndex_) {
+        *value = frame_bin_width_;
+    } else if (function == frameBinOffsetIndex_) {
+        *value = frame_bin_offset_;
     } else if (function >= binDisplayIndex_[0] && function <= binDisplayIndex_[4]) {
         // Handle individual bin display parameters
         int bin_index = -1;
@@ -603,6 +619,8 @@ asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *v
         *value = 0.260; // 0.260 ps per bin
     } else if (function == totalTimeIndex_) {
         *value = 260.0; // 260 ns total time
+    } else if (function == timeAtFrameIndex_) {
+        *value = time_at_frame_;
     } else {
         status = asynPortDriver::readFloat64(pasynUser, value);
     }
@@ -1009,9 +1027,32 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         int bin_size = j["binSize"];
         int bin_width = j["binWidth"];
         int bin_offset = j["binOffset"];
+        
+        // Extract additional frame data
+        double time_at_frame = j["timeAtFrame"];
+        
+        // Update frame data parameters
+        epicsMutexLock(mutex_);
+        time_at_frame_ = time_at_frame;
+        frame_bin_size_ = bin_size;
+        frame_bin_width_ = bin_width;
+        frame_bin_offset_ = bin_offset;
+        
+        // Update parameters
+        setDoubleParam(timeAtFrameIndex_, time_at_frame_);
+        setIntegerParam(frameBinSizeIndex_, frame_bin_size_);
+        setIntegerParam(frameBinWidthIndex_, frame_bin_width_);
+        setIntegerParam(frameBinOffsetIndex_, frame_bin_offset_);
+        
+        // Notify parameter changes
+        callParamCallbacks(timeAtFrameIndex_);
+        callParamCallbacks(frameBinSizeIndex_);
+        callParamCallbacks(frameBinWidthIndex_);
+        callParamCallbacks(frameBinOffsetIndex_);
+        epicsMutexUnlock(mutex_);
 
-        printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d\n", 
-               frame_number, bin_size, bin_width, bin_offset);
+        printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d, time_at_frame=%.3e\n", 
+               frame_number, bin_size, bin_width, bin_offset, time_at_frame);
 
         // Create frame histogram
         HistogramData frame_histogram(bin_size, HistogramData::DataType::FRAME_DATA);

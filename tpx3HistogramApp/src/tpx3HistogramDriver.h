@@ -196,6 +196,12 @@ private:
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
     int binDisplayIndex_[5];     // Individual bin display parameters (BIN_0 to BIN_4)
+    
+    // Frame data parameters from JSON
+    int timeAtFrameIndex_;       // Timestamp at frame in nanoseconds
+    int frameBinSizeIndex_;      // Number of bins in current frame
+    int frameBinWidthIndex_;     // Bin width parameter from frame
+    int frameBinOffsetIndex_;    // Bin offset parameter from frame
 
     // Network and data
     std::string host_;
@@ -215,6 +221,12 @@ private:
     int bin_width_;
     int bin_offset_;
     int number_of_bins_;
+    
+    // Frame data from JSON
+    double time_at_frame_;
+    int frame_bin_size_;
+    int frame_bin_width_;
+    int frame_bin_offset_;
     
     // Threading and synchronization
     epicsMutexId mutex_;

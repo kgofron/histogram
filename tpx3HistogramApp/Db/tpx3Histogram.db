@@ -134,6 +134,39 @@ record(stringin, "$(P)$(R)FILENAME") {
     field(INP, "@asyn($(PORT) $(ADDR))FILENAME")
 }
 
+# Frame data parameters from JSON
+record(ai, "$(P)$(R)TIME_AT_FRAME_NS") {
+    field(DESC, "Timestamp at frame in nanoseconds")
+    field(DTYP, "asynFloat64")
+    field(INP, "@asyn($(PORT) $(ADDR))TIME_AT_FRAME")
+    field(PREC, "3")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)FRAME_BIN_SIZE") {
+    field(DESC, "Number of bins in current frame")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))FRAME_BIN_SIZE")
+    field(PREC, "0")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)FRAME_BIN_WIDTH") {
+    field(DESC, "Bin width parameter from frame")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))FRAME_BIN_WIDTH")
+    field(PREC, "0")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)FRAME_BIN_OFFSET") {
+    field(DESC, "Bin offset parameter from frame")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))FRAME_BIN_OFFSET")
+    field(PREC, "0")
+    field(SCAN, "I/O Intr")
+}
+
 # Histogram bin records (first 5 bins for display)
 record(ai, "$(P)$(R)BIN_0") {
     field(DESC, "Histogram bin 0 value")

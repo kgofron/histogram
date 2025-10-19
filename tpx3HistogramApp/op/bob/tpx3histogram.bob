@@ -7,7 +7,7 @@
   <widget type="group" version="3.0.0">
     <name>TPX3_Histogram_Control</name>
     <width>1400</width>
-    <height>1200</height>
+    <height>1300</height>
     <widget type="label" version="2.0.0">
       <name>Title</name>
       <text>Timepix3 Histogram IOC Control Panel</text>
@@ -400,9 +400,130 @@
       </widget>
     </widget>
     <widget type="group" version="3.0.0">
-      <name>HistogramBins</name>
+      <name>FrameData</name>
       <x>10</x>
       <y>580</y>
+      <width>1350</width>
+      <height>120</height>
+      <widget type="label" version="2.0.0">
+        <name>FrameDataLabel</name>
+        <text>Frame Data from JSON</text>
+        <x>10</x>
+        <y>10</y>
+        <width>200</width>
+        <background_color>
+          <color red="240" green="240" blue="240">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="0" green="128" blue="255">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
+        <name>TimeAtFrameLabel</name>
+        <text>Time at Frame (ns):</text>
+        <x>20</x>
+        <y>45</y>
+        <width>140</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>TimeAtFrameDisplay</name>
+        <pv_name>$(P)$(R)TIME_AT_FRAME_NS</pv_name>
+        <x>160</x>
+        <y>40</y>
+        <width>180</width>
+        <height>30</height>
+        <background_color>
+          <color red="255" green="220" blue="220">
+          </color>
+        </background_color>
+        <format>3</format>
+        <precision>9</precision>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="128" green="0" blue="0">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
+        <name>FrameBinSizeLabel</name>
+        <text>Frame Bin Size:</text>
+        <x>360</x>
+        <y>45</y>
+        <width>120</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>FrameBinSizeDisplay</name>
+        <pv_name>$(P)$(R)FRAME_BIN_SIZE</pv_name>
+        <x>480</x>
+        <y>40</y>
+        <width>120</width>
+        <height>30</height>
+        <background_color>
+          <color red="220" green="255" blue="220">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="0" green="128" blue="0">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
+        <name>FrameBinWidthLabel</name>
+        <text>Frame Bin Width:</text>
+        <x>620</x>
+        <y>45</y>
+        <width>130</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>FrameBinWidthDisplay</name>
+        <pv_name>$(P)$(R)FRAME_BIN_WIDTH</pv_name>
+        <x>750</x>
+        <y>40</y>
+        <width>120</width>
+        <height>30</height>
+        <background_color>
+          <color red="220" green="220" blue="255">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="0" green="0" blue="128">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
+        <name>FrameBinOffsetLabel</name>
+        <text>Frame Bin Offset:</text>
+        <x>890</x>
+        <y>45</y>
+        <width>130</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>FrameBinOffsetDisplay</name>
+        <pv_name>$(P)$(R)FRAME_BIN_OFFSET</pv_name>
+        <x>1020</x>
+        <y>40</y>
+        <width>120</width>
+        <height>30</height>
+        <background_color>
+          <color red="255" green="255" blue="220">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="128" green="128" blue="0">
+          </color>
+        </border_color>
+      </widget>
+    </widget>
+    <widget type="group" version="3.0.0">
+      <name>HistogramBins</name>
+      <x>10</x>
+      <y>720</y>
       <width>1350</width>
       <widget type="label" version="2.0.0">
         <name>HistogramBinsLabel</name>
@@ -568,7 +689,7 @@
     <widget type="group" version="3.0.0">
       <name>PerformanceMonitoring</name>
       <x>10</x>
-      <y>800</y>
+      <y>940</y>
       <width>1350</width>
       <height>150</height>
       <widget type="label" version="2.0.0">
