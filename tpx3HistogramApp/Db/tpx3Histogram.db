@@ -112,8 +112,8 @@ record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)$(R)BIN_WIDTH_PS") {
-    field(DESC, "Bin width in picoseconds")
+record(ai, "$(P)$(R)BIN_WIDTH_NS") {
+    field(DESC, "Bin width in nanoseconds")
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))BIN_WIDTH")
     field(PREC, "3")

@@ -361,7 +361,7 @@
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>BinWidthDisplay</name>
-        <pv_name>$(P)$(R)BIN_WIDTH_PS</pv_name>
+        <pv_name>$(P)$(R)BIN_WIDTH_NS</pv_name>
         <x>120</x>
         <y>80</y>
         <height>30</height>

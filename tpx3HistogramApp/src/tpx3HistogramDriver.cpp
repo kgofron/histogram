@@ -318,8 +318,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       bin_offset_(0),
       number_of_bins_(10),
       time_at_frame_(0.0),
-      frame_bin_size_(0),
-      frame_bin_width_(0),
+      frame_bin_size_(10),      // Default to 10 bins
+      frame_bin_width_(384000), // Default to 384000 (from your example data)
       frame_bin_offset_(0),
       error_count_(0),
       acquisition_rate_(0.0),
@@ -413,11 +413,22 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(acquisitionRateIndex_, 0.0);
     setDoubleParam(processingTimeIndex_, 0.0);
     setDoubleParam(memoryUsageIndex_, 0.0);
-    setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e9);  // Default bin width in nanoseconds
-    setDoubleParam(totalTimeIndex_, 260.0);
+    setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_);  // Default bin width in nanoseconds
+    setDoubleParam(totalTimeIndex_, (TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_)*frame_bin_size_);  // Total time in nanoseconds
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
     setStringParam(statusIndex_, "Initialized - Ready to connect");
+    
+    // Initialize frame data parameters
+    setDoubleParam(timeAtFrameIndex_, time_at_frame_);
+    setIntegerParam(frameBinSizeIndex_, frame_bin_size_);
+    setIntegerParam(frameBinWidthIndex_, frame_bin_width_);
+    setIntegerParam(frameBinOffsetIndex_, frame_bin_offset_);
+    
+    printf("DEBUG: Initialized frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
+    printf("DEBUG: Calculated bin width = %.6f ns\n", TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_);
+    printf("DEBUG: Calculated total time = %.6f ns\n", (TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_)*frame_bin_size_);
+    fflush(stdout);
     
     // Create some test histogram data for debugging
     printf("DEBUG: Creating test histogram data\n");
@@ -438,6 +449,9 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     
     printf("Timepix3 Histogram Driver initialized on port %s\n", portName);
     printf("DEBUG: Driver initialization complete - histogramDataIndex_=%d\n", histogramDataIndex_);
+    
+    // Call parameter callbacks to ensure all parameters are updated
+    callParamCallbacks();
 }
 
 // Destructor
@@ -616,9 +630,14 @@ asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *v
     } else if (function == memoryUsageIndex_) {
         *value = memory_usage_;
     } else if (function == binWidthIndex_) {
-        *value = 0.260; // 0.260 ps per bin
+        // Calculate actual bin width in nanoseconds: TPX3_TDC_CLOCK_PERIOD_SEC * 1e9 * frame_bin_width_
+        *value = TPX3_TDC_CLOCK_PERIOD_SEC * 1e9 * frame_bin_width_;
+        printf("DEBUG: readFloat64 binWidthIndex_ - frame_bin_width_=%d, calculated value=%.6f\n", frame_bin_width_, *value);
     } else if (function == totalTimeIndex_) {
-        *value = 260.0; // 260 ns total time
+        // Calculate total time range: bin_width * frame_bin_size
+        *value = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e9 * frame_bin_width_) * frame_bin_size_;
+        printf("DEBUG: readFloat64 totalTimeIndex_ - frame_bin_width_=%d, frame_bin_size_=%d, calculated value=%.6f\n", 
+               frame_bin_width_, frame_bin_size_, *value);
     } else if (function == timeAtFrameIndex_) {
         *value = time_at_frame_;
     } else {
@@ -1049,6 +1068,10 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         callParamCallbacks(frameBinSizeIndex_);
         callParamCallbacks(frameBinWidthIndex_);
         callParamCallbacks(frameBinOffsetIndex_);
+        
+        // Also notify bin width and total time changes since they depend on frame data
+        callParamCallbacks(binWidthIndex_);
+        callParamCallbacks(totalTimeIndex_);
         epicsMutexUnlock(mutex_);
 
         printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d, time_at_frame=%.3e\n", 
