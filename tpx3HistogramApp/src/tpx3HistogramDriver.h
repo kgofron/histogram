@@ -193,7 +193,7 @@ private:
     int totalTimeIndex_;
     int filenameIndex_;
     int histogramDataIndex_;
-    int histogramTimeNsIndex_;   // Time axis for histogram in nanoseconds
+    int histogramTimeMsIndex_;   // Time axis for histogram in milliseconds
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
     int binDisplayIndex_[5];     // Individual bin display parameters (BIN_0 to BIN_4)
@@ -229,7 +229,7 @@ private:
     int frame_bin_width_;
     int frame_bin_offset_;
     
-    // Time axis data for histogram plotting
+    // Time axis data for histogram plotting (in milliseconds)
     std::vector<epicsFloat64> histogram_time_data_;
     
     // Threading and synchronization

@@ -359,8 +359,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("TOTAL_TIME", asynParamFloat64, &totalTimeIndex_);
     createParam("FILENAME", asynParamOctet, &filenameIndex_);
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
-    createParam("HISTOGRAM_TIME_NS", asynParamFloat64Array, &histogramTimeNsIndex_);
-    printf("DEBUG: Created HISTOGRAM_TIME_NS parameter with index %d\n", histogramTimeNsIndex_);
+    createParam("HISTOGRAM_TIME_MS", asynParamFloat64Array, &histogramTimeMsIndex_);
+    printf("DEBUG: Created HISTOGRAM_TIME_MS parameter with index %d\n", histogramTimeMsIndex_);
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
     createParam("MAX_BINS", asynParamInt32, &maxBinsIndex_);
     
@@ -378,8 +378,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("BIN_4", asynParamInt32, &binDisplayIndex_[4]);
     
     
-    printf("DEBUG: Parameter indices - histogramDataIndex_=%d, histogramTimeNsIndex_=%d, numberOfBinsIndex_=%d\n", 
-           histogramDataIndex_, histogramTimeNsIndex_, numberOfBinsIndex_);
+    printf("DEBUG: Parameter indices - histogramDataIndex_=%d, histogramTimeMsIndex_=%d, numberOfBinsIndex_=%d\n", 
+           histogramDataIndex_, histogramTimeMsIndex_, numberOfBinsIndex_);
     printf("DEBUG: Display bin indices: ");
     for (int i = 0; i < 5; ++i) {
         printf("%d ", binDisplayIndex_[i]);
@@ -404,7 +404,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     printf("  TOTAL_TIME=%d\n", totalTimeIndex_);
     printf("  FILENAME=%d\n", filenameIndex_);
     printf("  HISTOGRAM_DATA=%d\n", histogramDataIndex_);
-    printf("  HISTOGRAM_TIME_NS=%d\n", histogramTimeNsIndex_);
+    printf("  HISTOGRAM_TIME_MS=%d\n", histogramTimeMsIndex_);
     printf("  NUMBER_OF_BINS=%d\n", numberOfBinsIndex_);
     printf("  MAX_BINS=%d\n", maxBinsIndex_);
     
@@ -1310,20 +1310,20 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         
         doCallbacksInt32Array(array_data.data(), bin_size, histogramDataIndex_, 0);
         
-            // Also calculate and push the time axis data
+            // Also calculate and push the time axis data (in milliseconds)
             histogram_time_data_.resize(bin_size);
             for (size_t i = 0; i < bin_size; ++i) {
-                // Time value for bin i: bin_offset + i * bin_width
-                histogram_time_data_[i] = (frame_bin_offset_ + i * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e9;
+                // Time value for bin i: bin_offset + i * bin_width (convert to milliseconds)
+                histogram_time_data_[i] = (frame_bin_offset_ + i * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
             }
             
-            printf("DEBUG: Calculated %zu time array elements (first 5: %.3f %.3f %.3f %.3f %.3f)\n", 
+            printf("DEBUG: Calculated %zu time array elements (first 5: %.3f %.3f %.3f %.3f %.3f ms)\n", 
                    bin_size, histogram_time_data_[0], histogram_time_data_[1], histogram_time_data_[2], histogram_time_data_[3], histogram_time_data_[4]);
             printf("DEBUG: histogram_time_data_ size=%zu\n", histogram_time_data_.size());
             
             // Push the time axis data using doCallbacksFloat64Array
             printf("DEBUG: Pushing time array via doCallbacksFloat64Array\n");
-            doCallbacksFloat64Array(histogram_time_data_.data(), bin_size, histogramTimeNsIndex_, 0);
+            doCallbacksFloat64Array(histogram_time_data_.data(), bin_size, histogramTimeMsIndex_, 0);
             printf("DEBUG: Finished pushing time array data\n");
     }
     printf("DEBUG: Finished pushing histogram array data and time axis data\n");

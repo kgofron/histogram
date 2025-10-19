@@ -688,14 +688,14 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>HistogramTimeLabel</name>
-        <text>Histogram Time Axis (ns):</text>
+        <text>Histogram Time Axis (ms):</text>
         <x>20</x>
         <y>125</y>
         <width>200</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>HistogramTimeDisplay</name>
-        <pv_name>$(P)$(R)HISTOGRAM_TIME_NS</pv_name>
+        <pv_name>$(P)$(R)HISTOGRAM_TIME_MS</pv_name>
         <x>220</x>
         <y>120</y>
         <width>1080</width>
@@ -704,6 +704,7 @@
           <color red="255" green="200" blue="200">
           </color>
         </background_color>
+        <precision>6</precision>
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="0" blue="0">
@@ -798,6 +799,73 @@
       <trace>
         <name>$(traces[0].y_pv)</name>
         <x_pv></x_pv>
+        <y_pv>$(P)$(R)HISTOGRAM_DATA</y_pv>
+        <err_pv></err_pv>
+        <axis>0</axis>
+        <trace_type>1</trace_type>
+        <color>
+          <color red="0" green="0" blue="255">
+          </color>
+        </color>
+        <line_width>1</line_width>
+        <line_style>0</line_style>
+        <point_type>0</point_type>
+        <point_size>10</point_size>
+        <visible>true</visible>
+      </trace>
+    </traces>
+  </widget>
+  <widget type="xyplot" version="3.0.0">
+    <name>X/Y Plot_1</name>
+    <x>1410</x>
+    <y>881</y>
+    <width>1010</width>
+    <height>840</height>
+    <x_axis>
+      <title>ToF [ms]</title>
+      <autoscale>true</autoscale>
+      <log_scale>false</log_scale>
+      <minimum>0.0</minimum>
+      <maximum>25.0</maximum>
+      <show_grid>false</show_grid>
+      <title_font>
+        <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+        </font>
+      </title_font>
+      <scale_font>
+        <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+        </font>
+      </scale_font>
+      <visible>true</visible>
+    </x_axis>
+    <y_axes>
+      <y_axis>
+        <title>ToF [cnts]</title>
+        <autoscale>true</autoscale>
+        <log_scale>false</log_scale>
+        <minimum>0.0</minimum>
+        <maximum>600.0</maximum>
+        <show_grid>false</show_grid>
+        <title_font>
+          <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+          </font>
+        </title_font>
+        <scale_font>
+          <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+          </font>
+        </scale_font>
+        <on_right>false</on_right>
+        <visible>true</visible>
+        <color>
+          <color name="Text" red="0" green="0" blue="0">
+          </color>
+        </color>
+      </y_axis>
+    </y_axes>
+    <traces>
+      <trace>
+        <name>$(traces[0].y_pv)</name>
+        <x_pv>$(P)$(R)HISTOGRAM_TIME_MS</x_pv>
         <y_pv>$(P)$(R)HISTOGRAM_DATA</y_pv>
         <err_pv></err_pv>
         <axis>0</axis>
