@@ -1125,8 +1125,8 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
                     callParamCallbacks(acquisitionRateIndex_);
                     last_rate_update_time_ = current_time_seconds;
                     
-                    printf("DEBUG: Averaged rate over %zu samples: %.2f Hz (current sample: %.2f Hz)\n", 
-                           rate_samples_.size(), acquisition_rate_, current_rate);
+                    // printf("DEBUG: Averaged rate over %zu samples: %.2f Hz (current sample: %.2f Hz)\n", 
+                    //        rate_samples_.size(), acquisition_rate_, current_rate);
                 }
             } else if (time_diff_seconds <= 0.01) {
                 printf("DEBUG: Skipping rate calculation - time difference too small: %.6f s\n", time_diff_seconds);
