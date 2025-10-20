@@ -626,12 +626,12 @@ asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *v
     } else if (function == binWidthIndex_) {
         // Calculate actual bin width in milliseconds: TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_
         *value = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_;
-        printf("DEBUG: readFloat64 binWidthIndex_ - frame_bin_width_=%d, calculated value=%.6f\n", frame_bin_width_, *value);
+        // printf("DEBUG: readFloat64 binWidthIndex_ - frame_bin_width_=%d, calculated value=%.6f\n", frame_bin_width_, *value);
     } else if (function == totalTimeIndex_) {
         // Calculate total time range: bin_width * frame_bin_size (in milliseconds)
         *value = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_) * frame_bin_size_;
-        printf("DEBUG: readFloat64 totalTimeIndex_ - frame_bin_width_=%d, frame_bin_size_=%d, calculated value=%.6f\n", 
-               frame_bin_width_, frame_bin_size_, *value);
+        // printf("DEBUG: readFloat64 totalTimeIndex_ - frame_bin_width_=%d, frame_bin_size_=%d, calculated value=%.6f\n", 
+        //        frame_bin_width_, frame_bin_size_, *value);
     } else if (function == timeAtFrameIndex_) {
         *value = time_at_frame_;
     } else {
@@ -646,17 +646,16 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
     
-    printf("DEBUG: readInt32Array called with function=%d, histogramDataIndex_=%d, nElements=%zu\n", 
-           function, histogramDataIndex_, nElements);
-    fflush(stdout);
+    // printf("DEBUG: readInt32Array called with function=%d, histogramDataIndex_=%d, nElements=%zu\n", 
+    //        function, histogramDataIndex_, nElements);
     
     if (function == histogramDataIndex_) {
-        printf("DEBUG: Processing histogram data array directly (no parent call for asynPortDriver)\n");
+        // printf("DEBUG: Processing histogram data array directly (no parent call for asynPortDriver)\n");
         epicsMutexLock(mutex_);
         
         if (running_sum_) {
             size_t elements_to_copy = std::min(nElements, running_sum_->get_bin_size());
-            printf("DEBUG: Copying %zu elements from running_sum_ (bin_size=%zu)\n", elements_to_copy, running_sum_->get_bin_size());
+            // printf("DEBUG: Copying %zu elements from running_sum_ (bin_size=%zu)\n", elements_to_copy, running_sum_->get_bin_size());
             
             for (size_t i = 0; i < elements_to_copy; ++i) {
                 if (running_sum_->get_data_type() == HistogramData::DataType::RUNNING_SUM) {
@@ -674,13 +673,13 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
             }
             
             *nIn = nElements;  // Always return the requested number of elements
-            printf("DEBUG: Returning %zu histogram values (first 10): ", nElements);
-            for (size_t i = 0; i < std::min(elements_to_copy, static_cast<size_t>(10)); ++i) {
-                printf("%d ", value[i]);
-            }
-            printf("\n");
+            // printf("DEBUG: Returning %zu histogram values (first 10): ", nElements);
+            // for (size_t i = 0; i < std::min(elements_to_copy, static_cast<size_t>(10)); ++i) {
+            //     printf("%d ", value[i]);
+            // }
+            // printf("\n");
         } else {
-            printf("DEBUG: No running_sum_ data, filling with zeros\n");
+            // printf("DEBUG: No running_sum_ data, filling with zeros\n");
             for (size_t i = 0; i < nElements; ++i) {
                 value[i] = 0;
             }
@@ -689,12 +688,11 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
         
         epicsMutexUnlock(mutex_);
     } else {
-        printf("DEBUG: Function %d does not match histogramDataIndex_ %d, calling parent\n", function, histogramDataIndex_);
+        // printf("DEBUG: Function %d does not match histogramDataIndex_ %d, calling parent\n", function, histogramDataIndex_);
         status = asynPortDriver::readInt32Array(pasynUser, value, nElements, nIn);
     }
     
-    printf("DEBUG: readInt32Array returning status=%d, nIn=%zu\n", status, *nIn);
-    fflush(stdout);
+    // printf("DEBUG: readInt32Array returning status=%d, nIn=%zu\n", status, *nIn);
     
     return status;
 }
@@ -1036,7 +1034,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         return true;
     }
     
-    printf("DEBUG: Processing line: %s\n", line_buffer);
+    // printf("DEBUG: Processing line: %s\n", line_buffer);
     
     // Parse JSON
     json j;
@@ -1077,9 +1075,9 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         setDoubleParam(binWidthIndex_, calculated_bin_width);
         setDoubleParam(totalTimeIndex_, calculated_total_time);
         
-        printf("DEBUG: Updated frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
-        printf("DEBUG: Calculated bin width = %.6f ms\n", calculated_bin_width);
-        printf("DEBUG: Calculated total time = %.6f ms\n", calculated_total_time);
+        // printf("DEBUG: Updated frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
+        // printf("DEBUG: Calculated bin width = %.6f ms\n", calculated_bin_width);
+        // printf("DEBUG: Calculated total time = %.6f ms\n", calculated_total_time);
         
         // Notify parameter changes
         callParamCallbacks(timeAtFrameIndex_);
@@ -1091,11 +1089,11 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         callParamCallbacks(binWidthIndex_);
         callParamCallbacks(totalTimeIndex_);
         
-        printf("DEBUG: Called parameter callbacks for bin width and total time\n");
+        // printf("DEBUG: Called parameter callbacks for bin width and total time\n");
         epicsMutexUnlock(mutex_);
 
-        printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d, time_at_frame=%.3e\n", 
-               frame_number, bin_size, bin_width, bin_offset, time_at_frame);
+        // printf("DEBUG: Processing frame %d, bin_size=%d, bin_width=%d, bin_offset=%d, time_at_frame=%.3e\n", 
+        //        frame_number, bin_size, bin_width, bin_offset, time_at_frame);
 
         // Create frame histogram
         HistogramData frame_histogram(bin_size, HistogramData::DataType::FRAME_DATA);
@@ -1173,7 +1171,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 }
 
 void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
-    printf("DEBUG: processFrame called with frame_data bin_size=%zu\n", frame_data.get_bin_size());
+    // printf("DEBUG: processFrame called with frame_data bin_size=%zu\n", frame_data.get_bin_size());
     epicsMutexLock(mutex_);
     
     if (!running_sum_) {
@@ -1188,7 +1186,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             running_sum_->set_bin_edge(i, frame_data.get_bin_edges()[i]);
         }
         
-        printf("DEBUG: Initialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
+        // printf("DEBUG: Initialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
     }
     
     // Check if bin sizes match
@@ -1207,7 +1205,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             running_sum_->set_bin_edge(i, frame_data.get_bin_edges()[i]);
         }
         
-        printf("DEBUG: Reinitialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
+        // printf("DEBUG: Reinitialized running_sum_ with bin_size=%zu\n", running_sum_->get_bin_size());
         
         // Reset frame count since we're starting with new bin configuration
         frame_count_ = 0;
@@ -1239,20 +1237,19 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     }
     total_counts_ += frame_total;
     
-    printf("DEBUG: Updated frame_count_=%llu, total_counts_=%llu\n", 
-           (unsigned long long)frame_count_, (unsigned long long)total_counts_);
+    // printf("DEBUG: Updated frame_count_=%llu, total_counts_=%llu\n",
+    //        (unsigned long long)frame_count_, (unsigned long long)total_counts_);
     
     // Update parameters
     setIntegerParam(frameCountIndex_, static_cast<epicsInt32>(frame_count_));
     setInteger64Param(totalCountsIndex_, static_cast<epicsInt64>(total_counts_));
-    printf("DEBUG: Set totalCountsIndex_=%d to value=%llu\n", totalCountsIndex_, (unsigned long long)total_counts_);
-    fflush(stdout);
+    // printf("DEBUG: Set totalCountsIndex_=%d to value=%llu\n", totalCountsIndex_, (unsigned long long)total_counts_);
     
     // Notify that frame count and total counts have been updated
     callParamCallbacks(frameCountIndex_);
     callParamCallbacks(totalCountsIndex_);
     
-    printf("DEBUG: Called callParamCallbacks for frame count and total counts\n");
+    // printf("DEBUG: Called callParamCallbacks for frame count and total counts\n");
     
     // Update status with frame processing info
     if (frame_count_ % 10 == 0) {  // Update every 10 frames
@@ -1273,7 +1270,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     }
     
     // Notify that histogram data has been updated
-    printf("DEBUG: About to push histogram array data via doCallbacksInt32Array\n");
+    // printf("DEBUG: About to push histogram array data via doCallbacksInt32Array\n");
     
     // For array parameters, we need to push the data using doCallbacksInt32Array
     if (running_sum_) {
@@ -1289,19 +1286,19 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             }
         }
         
-        printf("DEBUG: Pushing %zu array elements (first 5: %d %d %d %d %d)\n", 
-               bin_size, array_data[0], array_data[1], array_data[2], array_data[3], array_data[4]);
+        // printf("DEBUG: Pushing %zu array elements (first 5: %d %d %d %d %d)\n", 
+        //        bin_size, array_data[0], array_data[1], array_data[2], array_data[3], array_data[4]);
         
         doCallbacksInt32Array(array_data.data(), bin_size, histogramDataIndex_, 0);
         
         // Also push the individual frame data (not accumulated)
-        printf("DEBUG: Pushing individual frame data via doCallbacksInt32Array\n");
+        // printf("DEBUG: Pushing individual frame data via doCallbacksInt32Array\n");
         std::vector<epicsInt32> frame_array_data(bin_size);
         for (size_t i = 0; i < bin_size; ++i) {
             frame_array_data[i] = static_cast<epicsInt32>(frame_data.get_bin_value_32(i));
         }
         doCallbacksInt32Array(frame_array_data.data(), bin_size, histogramFrameIndex_, 0);
-        printf("DEBUG: Finished pushing frame data\n");
+        // printf("DEBUG: Finished pushing frame data\n");
         
             // Also calculate and push the time axis data (in milliseconds)
             histogram_time_data_.resize(bin_size);
@@ -1310,16 +1307,16 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
                 histogram_time_data_[i] = (frame_bin_offset_ + i * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
             }
             
-            printf("DEBUG: Calculated %zu time array elements (first 5: %.3f %.3f %.3f %.3f %.3f ms)\n", 
-                   bin_size, histogram_time_data_[0], histogram_time_data_[1], histogram_time_data_[2], histogram_time_data_[3], histogram_time_data_[4]);
-            printf("DEBUG: histogram_time_data_ size=%zu\n", histogram_time_data_.size());
+            // printf("DEBUG: Calculated %zu time array elements (first 5: %.3f %.3f %.3f %.3f %.3f ms)\n", 
+            //        bin_size, histogram_time_data_[0], histogram_time_data_[1], histogram_time_data_[2], histogram_time_data_[3], histogram_time_data_[4]);
+            // printf("DEBUG: histogram_time_data_ size=%zu\n", histogram_time_data_.size());
             
             // Push the time axis data using doCallbacksFloat64Array
-            printf("DEBUG: Pushing time array via doCallbacksFloat64Array\n");
+            // printf("DEBUG: Pushing time array via doCallbacksFloat64Array\n");
             doCallbacksFloat64Array(histogram_time_data_.data(), bin_size, histogramTimeMsIndex_, 0);
-            printf("DEBUG: Finished pushing time array data\n");
+            // printf("DEBUG: Finished pushing time array data\n");
     }
-    printf("DEBUG: Finished pushing histogram array data and time axis data\n");
+    // printf("DEBUG: Finished pushing histogram array data and time axis data\n");
     
     // Save updated running sum, not used for now
     // saveRunningSum();
