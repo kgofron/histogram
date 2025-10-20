@@ -302,7 +302,7 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>AcquisitionRateLabel</name>
-        <text>Acquisition Rate (fps):</text>
+        <text>Acquisition Rate (Hz):</text>
         <x>520</x>
         <y>45</y>
         <width>150</width>
