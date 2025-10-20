@@ -92,6 +92,7 @@ record(ai, "$(P)$(R)ACQUISITION_RATE") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))ACQUISITION_RATE")
     field(PREC, "3")
+    field(EGU, "Hz")
     field(SCAN, "I/O Intr")
 }
 
@@ -100,6 +101,7 @@ record(ai, "$(P)$(R)PROCESSING_TIME_MS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))PROCESSING_TIME")
     field(PREC, "3")
+    field(EGU, "ms")
     field(SCAN, "I/O Intr")
 }
 
@@ -108,6 +110,7 @@ record(ai, "$(P)$(R)MEMORY_USAGE_MB") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))MEMORY_USAGE")
     field(PREC, "3")
+    field(EGU, "MB")
     field(SCAN, "I/O Intr")
 }
 
@@ -116,6 +119,7 @@ record(ai, "$(P)$(R)BIN_WIDTH_NS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))BIN_WIDTH")
     field(PREC, "3")
+    field(EGU, "ns")
     field(SCAN, "I/O Intr")
 }
 
@@ -124,6 +128,7 @@ record(ai, "$(P)$(R)TOTAL_TIME_NS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))TOTAL_TIME")
     field(PREC, "3")
+    field(EGU, "ns")
     field(SCAN, "I/O Intr")
 }
 
@@ -139,6 +144,7 @@ record(ai, "$(P)$(R)TIME_AT_FRAME_NS") {
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))TIME_AT_FRAME")
     field(PREC, "3")
+    field(EGU, "ns")
     field(SCAN, "I/O Intr")
 }
 
