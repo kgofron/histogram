@@ -324,7 +324,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       error_count_(0),
       acquisition_rate_(0.0),
       processing_time_(0.0),
-      memory_usage_(0.0)
+      memory_usage_(0.0),
+      max_bins_(1000)  // Default maximum bins
 {
     // Create data directory
     std::filesystem::create_directories("data");
@@ -413,7 +414,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_);  // Default bin width in milliseconds
     setDoubleParam(totalTimeIndex_, (TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_)*frame_bin_size_);  // Total time in milliseconds
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
-    setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
+    setIntegerParam(maxBinsIndex_, max_bins_);  // Configurable maximum bins for array record
     setStringParam(statusIndex_, "Initialized - Ready to connect");
     
     // Initialize frame data parameters
@@ -508,6 +509,10 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
         number_of_bins_ = value;
         setIntegerParam(numberOfBinsIndex_, value);
         printf("Number of bins set to %d\n", value);
+    } else if (function == maxBinsIndex_) {
+        max_bins_ = value;
+        setIntegerParam(maxBinsIndex_, value);
+        printf("Maximum bins set to %d\n", value);
     } else {
         status = asynPortDriver::writeInt32(pasynUser, value);
     }
@@ -552,7 +557,7 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
     } else if (function == numberOfBinsIndex_) {
         *value = number_of_bins_;
     } else if (function == maxBinsIndex_) {
-        *value = 1000; // Default maximum bins
+        *value = max_bins_; // Configurable maximum bins
     } else if (function == frameBinSizeIndex_) {
         *value = frame_bin_size_;
     } else if (function == frameBinWidthIndex_) {

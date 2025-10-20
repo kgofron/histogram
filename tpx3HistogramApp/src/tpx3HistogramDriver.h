@@ -142,7 +142,7 @@ private:
 // Constants
 constexpr double TPX3_TDC_CLOCK_PERIOD_SEC = (1.5625 / 6.0) * 1e-9;
 constexpr size_t MAX_BUFFER_SIZE = 32768;
-constexpr size_t MAX_BINS = 1000;
+// MAX_BINS is now configurable via the maxBinsIndex_ parameter
 constexpr int DEFAULT_PORT = 8451;
 constexpr const char* DEFAULT_HOST = "127.0.0.1";
 
@@ -246,6 +246,9 @@ private:
     double acquisition_rate_;
     double processing_time_;
     double memory_usage_;
+    
+    // Configurable parameters
+    int max_bins_;
     
     // Methods
     void workerThread();
