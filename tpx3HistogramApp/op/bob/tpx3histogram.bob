@@ -371,13 +371,13 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>BinWidthLabel</name>
-        <text>Bin Width (ns):</text>
+        <text>Bin Width (ms):</text>
         <x>20</x>
         <y>85</y>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>BinWidthDisplay</name>
-        <pv_name>$(P)$(R)BIN_WIDTH_NS</pv_name>
+        <pv_name>$(P)$(R)BIN_WIDTH_MS</pv_name>
         <x>120</x>
         <y>80</y>
         <width>120</width>
