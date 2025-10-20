@@ -860,7 +860,7 @@ void tpx3HistogramDriver::workerThread()
                     break;
                 }
                 
-                printf("DEBUG: Received %zd bytes\n", bytes_read);
+                // printf("DEBUG: Received %zd bytes\n", bytes_read);
 
                 total_read_ += bytes_read;
                 line_buffer_[total_read_] = '\0';
@@ -1117,7 +1117,7 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 
         // Read any remaining binary data needed
         if (binary_read < binary_needed) {
-            printf("DEBUG: Need to read %zu more bytes of binary data\n", binary_needed - binary_read);
+            // printf("DEBUG: Need to read %zu more bytes of binary data\n", binary_needed - binary_read);
             if (!network_client_->receive_exact(
                 reinterpret_cast<char*>(tof_bin_values.data()) + binary_read,
                 binary_needed - binary_read)) {
@@ -1125,43 +1125,43 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
                 printf("Failed to read binary data\n");
                 return false;
             }
-            printf("DEBUG: Successfully read binary data\n");
+            // printf("DEBUG: Successfully read binary data\n");
         }
 
         // Convert to little-endian
-        printf("DEBUG: Bin values before conversion: ");
-        for (int i = 0; i < bin_size; ++i) {
-            printf("%u ", tof_bin_values[i]);
-        }
-        printf("\n");
+        // printf("DEBUG: Bin values before conversion: ");
+        // for (int i = 0; i < bin_size; ++i) {
+        //     printf("%u ", tof_bin_values[i]);
+        // }
+        // printf("\n");
         
         for (int i = 0; i < bin_size; ++i) {
             tof_bin_values[i] = __builtin_bswap32(tof_bin_values[i]);
             frame_histogram.set_bin_value_32(i, tof_bin_values[i]);
         }
         
-        printf("DEBUG: Bin values after conversion: ");
-        for (int i = 0; i < bin_size; ++i) {
-            printf("%u ", tof_bin_values[i]);
-        }
-        printf("\n");
+        // printf("DEBUG: Bin values after conversion: ");
+        // for (int i = 0; i < bin_size; ++i) {
+        //     printf("%u ", tof_bin_values[i]);
+        // }
+        // printf("\n");
 
         // Print frame information
-        printf("\nFrame %d data:\n", frame_number);
-        printf("Bin edges: ");
-        for (int i = 0; i < bin_size + 1; ++i) {
-            printf("%.9e ", frame_histogram.get_bin_edges()[i]);
-        }
-        printf("\nBin values: ");
-        for (int i = 0; i < bin_size; ++i) {
-            printf("%u ", frame_histogram.get_bin_value_32(i));
-        }
-        printf("\n");
+        // printf("\nFrame %d data:\n", frame_number);
+        // printf("Bin edges: ");
+        // for (int i = 0; i < bin_size + 1; ++i) {
+        //     printf("%.9e ", frame_histogram.get_bin_edges()[i]);
+        // }
+        // printf("\nBin values: ");
+        // for (int i = 0; i < bin_size; ++i) {
+        //     printf("%u ", frame_histogram.get_bin_value_32(i));
+        // }
+        // printf("\n");
 
         // Process frame
         processFrame(frame_histogram);
         
-        printf("Frame %d processed (running sum updated)\n", frame_number);
+        // printf("Frame %d processed (running sum updated)\n", frame_number);
 
     } catch (const std::exception& e) {
         printf("Error processing frame: %s\n", e.what());
@@ -1266,7 +1266,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         setIntegerParam(numberOfBinsIndex_, static_cast<epicsInt32>(actual_bin_size));
         callParamCallbacks(numberOfBinsIndex_);
         
-        printf("DEBUG: Updated NUMBER_OF_BINS parameter (actual_bin_size=%zu)\n", actual_bin_size);
+        // printf("DEBUG: Updated NUMBER_OF_BINS parameter (actual_bin_size=%zu)\n", actual_bin_size);
     }
     
     // Notify that histogram data has been updated
