@@ -286,7 +286,7 @@
       <widget type="textupdate" version="2.0.0">
         <name>TotalCountsDisplay</name>
         <pv_name>$(P)$(R)TOTAL_COUNTS</pv_name>
-        <x>360</x>
+        <x>380</x>
         <y>40</y>
         <width>120</width>
         <height>30</height>
@@ -302,22 +302,21 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>AcquisitionRateLabel</name>
-        <text>Acquisition Rate:</text>
-        <x>500</x>
+        <text>Acquisition Rate (fps):</text>
+        <x>520</x>
         <y>45</y>
-        <width>120</width>
+        <width>150</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>AcquisitionRateDisplay</name>
         <pv_name>$(P)$(R)ACQUISITION_RATE</pv_name>
-        <x>620</x>
+        <x>670</x>
         <y>40</y>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -327,21 +326,20 @@
       <widget type="label" version="2.0.0">
         <name>ProcessingTimeLabel</name>
         <text>Processing Time (ms):</text>
-        <x>740</x>
-        <y>45</y>
-        <width>140</width>
+        <x>520</x>
+        <y>85</y>
+        <width>150</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>ProcessingTimeDisplay</name>
         <pv_name>$(P)$(R)PROCESSING_TIME_MS</pv_name>
-        <x>880</x>
-        <y>40</y>
+        <x>670</x>
+        <y>80</y>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -351,21 +349,20 @@
       <widget type="label" version="2.0.0">
         <name>MemoryUsageLabel</name>
         <text>Memory Usage (MB):</text>
-        <x>1000</x>
+        <x>800</x>
         <y>45</y>
         <width>140</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>MemoryUsageDisplay</name>
         <pv_name>$(P)$(R)MEMORY_USAGE_MB</pv_name>
-        <x>1140</x>
+        <x>940</x>
         <y>40</y>
         <height>30</height>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
-        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -398,14 +395,14 @@
       <widget type="label" version="2.0.0">
         <name>TotalTimeLabel</name>
         <text>Total Time (ns):</text>
-        <x>240</x>
+        <x>260</x>
         <y>85</y>
         <width>120</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>TotalTimeDisplay</name>
         <pv_name>$(P)$(R)TOTAL_TIME_NS</pv_name>
-        <x>360</x>
+        <x>380</x>
         <y>80</y>
         <width>120</width>
         <height>30</height>
