@@ -379,6 +379,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("PROCESSING_TIME", asynParamFloat64, &processingTimeIndex_);
     createParam("MEMORY_USAGE", asynParamFloat64, &memoryUsageIndex_);
     createParam("BIN_WIDTH", asynParamFloat64, &binWidthIndex_);
+    createParam("BIN_OFFSET", asynParamFloat64, &binOffsetIndex_);
     createParam("TOTAL_TIME", asynParamFloat64, &totalTimeIndex_);
     createParam("FILENAME", asynParamOctet, &filenameIndex_);
     createParam("HISTOGRAM_DATA", asynParamInt32Array, &histogramDataIndex_);
@@ -417,6 +418,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     printf("  PROCESSING_TIME=%d\n", processingTimeIndex_);
     printf("  MEMORY_USAGE=%d\n", memoryUsageIndex_);
     printf("  BIN_WIDTH=%d\n", binWidthIndex_);
+    printf("  BIN_OFFSET=%d\n", binOffsetIndex_);
     printf("  TOTAL_TIME=%d\n", totalTimeIndex_);
     printf("  FILENAME=%d\n", filenameIndex_);
     printf("  HISTOGRAM_DATA=%d\n", histogramDataIndex_);
@@ -434,6 +436,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(processingTimeIndex_, 0.0);
     setDoubleParam(memoryUsageIndex_, 0.0);
     setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_);  // Default bin width in milliseconds
+    setDoubleParam(binOffsetIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_offset_);  // Default bin offset in milliseconds
     setDoubleParam(totalTimeIndex_, (TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_)*frame_bin_size_);  // Total time in milliseconds
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, max_bins_);  // Configurable maximum bins for array record
@@ -654,6 +657,10 @@ asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *v
         // Calculate actual bin width in milliseconds: TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_
         *value = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_;
         // printf("DEBUG: readFloat64 binWidthIndex_ - frame_bin_width_=%d, calculated value=%.6f\n", frame_bin_width_, *value);
+    } else if (function == binOffsetIndex_) {
+        // Calculate actual bin offset in milliseconds: TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_offset_
+        *value = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_offset_;
+        // printf("DEBUG: readFloat64 binOffsetIndex_ - frame_bin_offset_=%d, calculated value=%.6f\n", frame_bin_offset_, *value);
     } else if (function == totalTimeIndex_) {
         // Calculate total time range: bin_width * frame_bin_size (in milliseconds)
         *value = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_) * frame_bin_size_;
@@ -1183,9 +1190,11 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         
         // Calculate and set the derived parameters directly
         double calculated_bin_width = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_;  // Convert to milliseconds
+        double calculated_bin_offset = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_offset_;  // Convert to milliseconds
         double calculated_total_time = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_) * frame_bin_size_;  // Convert to milliseconds
         
         setDoubleParam(binWidthIndex_, calculated_bin_width);
+        setDoubleParam(binOffsetIndex_, calculated_bin_offset);
         setDoubleParam(totalTimeIndex_, calculated_total_time);
         
         // printf("DEBUG: Updated frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
@@ -1198,8 +1207,9 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         callParamCallbacks(frameBinWidthIndex_);
         callParamCallbacks(frameBinOffsetIndex_);
         
-        // Also notify bin width and total time changes since they depend on frame data
+        // Also notify bin width, bin offset, and total time changes since they depend on frame data
         callParamCallbacks(binWidthIndex_);
+        callParamCallbacks(binOffsetIndex_);
         callParamCallbacks(totalTimeIndex_);
         
         // printf("DEBUG: Called parameter callbacks for bin width and total time\n");

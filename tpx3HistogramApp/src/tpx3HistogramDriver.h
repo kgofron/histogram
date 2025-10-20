@@ -203,6 +203,7 @@ private:
     int processingTimeIndex_;
     int memoryUsageIndex_;
     int binWidthIndex_;
+    int binOffsetIndex_;        // Bin offset in milliseconds
     int totalTimeIndex_;
     int filenameIndex_;
     int histogramDataIndex_;
