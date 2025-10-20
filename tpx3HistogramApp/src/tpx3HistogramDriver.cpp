@@ -300,7 +300,7 @@ std::string createStatusMessage(const std::string& baseMessage, const std::strin
 
 // Constructor
 tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
-    : asynPortDriver(portName, maxAddr, NUM_PARAMS,
+    : asynPortDriver(portName, maxAddr,
                      asynInt32Mask | asynInt64Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
                      asynInt32Mask | asynInt64Mask | asynOctetMask | asynFloat64Mask | asynInt32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask,
                      ASYN_CANBLOCK, 1, 0, 0),
@@ -1047,7 +1047,6 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 
     try {
         // Extract header information
-        int frame_number = j["frameNumber"];
         int bin_size = j["binSize"];
         int bin_width = j["binWidth"];
         int bin_offset = j["binOffset"];
