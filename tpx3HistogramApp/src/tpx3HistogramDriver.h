@@ -262,6 +262,16 @@ private:
     // Configurable parameters
     int max_bins_;
     
+    // Frame rate calculation variables
+    int previous_frame_number_;
+    double previous_time_at_frame_;
+    bool first_frame_received_;
+    
+    // Acquisition rate averaging variables
+    std::vector<double> rate_samples_;
+    double last_rate_update_time_;
+    static const size_t MAX_RATE_SAMPLES = 10;  // Keep last 10 samples for averaging
+    
     // Methods
     void workerThread();
     void monitorThread();

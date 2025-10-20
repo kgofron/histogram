@@ -16,6 +16,7 @@
 #include <epicsThread.h>
 #include <epicsString.h>
 #include <epicsStdio.h>
+#include <epicsTime.h>
 #include <iocsh.h>
 #include <cstring>
 #include <iostream>
@@ -338,7 +339,12 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       acquisition_rate_(0.0),
       processing_time_(0.0),
       memory_usage_(0.0),
-      max_bins_(1000)  // Default maximum bins
+      max_bins_(1000),  // Default maximum bins
+      previous_frame_number_(0),
+      previous_time_at_frame_(0.0),
+      first_frame_received_(false),
+      rate_samples_(),
+      last_rate_update_time_(0.0)
 {
     // Create data directory
     std::filesystem::create_directories("data");
@@ -938,7 +944,7 @@ void tpx3HistogramDriver::monitorThread()
         
         // Simulate performance metrics
         if (running_ && connected_) {
-            acquisition_rate_ = 1.0; // 1 frame per second
+            // acquisition_rate_ is now calculated from frame numbers in processDataLine
             processing_time_ = 0.1;  // 100ms
             memory_usage_ = 50.0;    // 50MB
         } else {
@@ -1071,9 +1077,67 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
 
         // Extract additional frame data
         double time_at_frame = j["timeAtFrame"];
+        int frame_number = j["frameNumber"];
+        
+        // Calculate acquisition rate based on frame number and computer time difference
+        epicsMutexLock(mutex_);
+        epicsTimeStamp current_time;
+        epicsTimeGetCurrent(&current_time);
+        double current_time_seconds = current_time.secPastEpoch + current_time.nsec / 1e9;
+        
+        if (!first_frame_received_) {
+            // First frame - just store the values
+            previous_frame_number_ = frame_number;
+            previous_time_at_frame_ = current_time_seconds;
+            first_frame_received_ = true;
+            acquisition_rate_ = 0.0;  // No rate available yet
+        } else {
+            // Calculate rate based on frame number difference and computer time difference
+            int frame_diff = frame_number - previous_frame_number_;
+            double time_diff_seconds = current_time_seconds - previous_time_at_frame_;
+            
+            // Check for frame loss (frame number jumped by more than 1)
+            if (frame_diff > 1) {
+                printf("WARNING: Frame loss detected! Expected frame %d, got frame %d (lost %d frames)\n", 
+                       previous_frame_number_ + 1, frame_number, frame_diff - 1);
+            }
+            
+            // Only calculate rate if we have valid time difference (avoid division by zero and noise)
+            if (frame_diff > 0 && time_diff_seconds > 0.01) {  // Minimum 10ms time difference
+                double current_rate = frame_diff / time_diff_seconds;
+                
+                // Add sample to our averaging buffer
+                rate_samples_.push_back(current_rate);
+                if (rate_samples_.size() > MAX_RATE_SAMPLES) {
+                    rate_samples_.erase(rate_samples_.begin());
+                }
+                
+                // Calculate average rate
+                double sum = 0.0;
+                for (double rate : rate_samples_) {
+                    sum += rate;
+                }
+                acquisition_rate_ = sum / rate_samples_.size();
+                
+                // Only update EPICS parameter once per second to reduce noise
+                if (current_time_seconds - last_rate_update_time_ >= 1.0) {
+                    setDoubleParam(acquisitionRateIndex_, acquisition_rate_);
+                    callParamCallbacks(acquisitionRateIndex_);
+                    last_rate_update_time_ = current_time_seconds;
+                    
+                    printf("DEBUG: Averaged rate over %zu samples: %.2f Hz (current sample: %.2f Hz)\n", 
+                           rate_samples_.size(), acquisition_rate_, current_rate);
+                }
+            } else if (time_diff_seconds <= 0.01) {
+                printf("DEBUG: Skipping rate calculation - time difference too small: %.6f s\n", time_diff_seconds);
+            }
+            
+            // Update previous values
+            previous_frame_number_ = frame_number;
+            previous_time_at_frame_ = current_time_seconds;
+        }
         
         // Update frame data parameters
-        epicsMutexLock(mutex_);
         time_at_frame_ = time_at_frame;
         frame_bin_size_ = bin_size;
         frame_bin_width_ = bin_width;
