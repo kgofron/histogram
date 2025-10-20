@@ -819,7 +819,18 @@ void tpx3HistogramDriver::saveData(const std::string& filename)
 {
     epicsMutexLock(mutex_);
     
-    // In real implementation, this would save histogram data to file
+    if (!running_sum_) {
+        status_ = createStatusMessage("No data to save", host_, port_, frame_count_, total_counts_);
+        setStringParam(statusIndex_, status_.c_str());
+        epicsMutexUnlock(mutex_);
+        callParamCallbacks();
+        printf("No histogram data to save\n");
+        return;
+    }
+    
+    // Save the histogram data to the specified file
+    saveHistogramToFile(filename, *running_sum_);
+    
     status_ = createStatusMessage("Data saved to " + filename, host_, port_, frame_count_, total_counts_);
     setStringParam(statusIndex_, status_.c_str());
     

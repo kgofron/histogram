@@ -187,29 +187,29 @@
       <widget type="label" version="2.0.0">
         <name>FilenameLabel</name>
         <text>Filename:</text>
-        <x>470</x>
-        <y>45</y>
+        <x>300</x>
+        <y>15</y>
         <width>80</width>
       </widget>
       <widget type="textentry" version="3.0.0">
         <name>FilenameInput</name>
         <pv_name>$(P)$(R)FILENAME</pv_name>
-        <x>550</x>
-        <y>40</y>
-        <width>200</width>
+        <x>370</x>
+        <y>10</y>
+        <width>380</width>
         <height>30</height>
       </widget>
       <widget type="label" version="2.0.0">
         <name>ErrorCountLabel</name>
         <text>Errors:</text>
-        <x>770</x>
+        <x>800</x>
         <y>45</y>
         <width>60</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>ErrorCountDisplay</name>
         <pv_name>$(P)$(R)ERROR_COUNT</pv_name>
-        <x>830</x>
+        <x>880</x>
         <y>40</y>
         <width>80</width>
         <height>30</height>
@@ -222,6 +222,14 @@
           <color red="255" green="0" blue="0">
           </color>
         </border_color>
+      </widget>
+      <widget type="fileselector" version="2.0.0">
+        <name>File Selector</name>
+        <pv_name>$(P)$(R)FILENAME</pv_name>
+        <x>750</x>
+        <y>10</y>
+        <width>30</width>
+        <height>30</height>
       </widget>
     </widget>
     <widget type="group" version="3.0.0">
@@ -304,13 +312,12 @@
         <pv_name>$(P)$(R)ACQUISITION_RATE</pv_name>
         <x>620</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
-        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
+        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -329,13 +336,12 @@
         <pv_name>$(P)$(R)PROCESSING_TIME_MS</pv_name>
         <x>880</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
-        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
+        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">
@@ -354,13 +360,12 @@
         <pv_name>$(P)$(R)MEMORY_USAGE_MB</pv_name>
         <x>1140</x>
         <y>40</y>
-        <width>100</width>
         <height>30</height>
-        <format>6</format>
         <background_color>
           <color red="200" green="255" blue="255">
           </color>
         </background_color>
+        <format>6</format>
         <border_width>1</border_width>
         <border_color>
           <color red="0" green="128" blue="128">

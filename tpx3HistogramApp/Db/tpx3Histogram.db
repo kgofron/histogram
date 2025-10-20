@@ -24,7 +24,7 @@ record(bo, "$(P)$(R)RESET") {
     field(DESC, "Reset histogram data")
     field(DTYP, "asynInt32")
     field(OUT, "@asyn($(PORT) $(ADDR))RESET")
-    field(ZNAM, "Reset")
+    field(ZNAM, "Ready")
     field(ONAM, "Reset")
 }
 
@@ -41,7 +41,7 @@ record(bo, "$(P)$(R)SAVE_DATA") {
     field(DESC, "Save histogram data to file")
     field(DTYP, "asynInt32")
     field(OUT, "@asyn($(PORT) $(ADDR))SAVE_DATA")
-    field(ZNAM, "Save")
+    field(ZNAM, "Ready")
     field(ONAM, "Save")
 }
 
@@ -127,10 +127,10 @@ record(ai, "$(P)$(R)TOTAL_TIME_NS") {
     field(SCAN, "I/O Intr")
 }
 
-record(stringin, "$(P)$(R)FILENAME") {
+record(stringout, "$(P)$(R)FILENAME") {
     field(DESC, "Filename for saving data")
-    field(DTYP, "asynOctetRead")
-    field(INP, "@asyn($(PORT) $(ADDR))FILENAME")
+    field(DTYP, "asynOctetWrite")
+    field(OUT, "@asyn($(PORT) $(ADDR))FILENAME")
 }
 
 # Frame data parameters from JSON
