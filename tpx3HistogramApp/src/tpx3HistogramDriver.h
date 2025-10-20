@@ -41,7 +41,7 @@
 #include <errno.h>
 
 // JSON parsing
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 // Use nlohmann namespace for convenience
 using json = nlohmann::json;

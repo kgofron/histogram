@@ -29,11 +29,13 @@ The IOC consists of several components:
 ### System Dependencies
 ```bash
 # Ubuntu/Debian
-sudo apt-get install build-essential nlohmann-json3-dev
+sudo apt-get install build-essential
 
 # CentOS/RHEL/Fedora
-sudo yum install gcc-c++ make nlohmann-json-devel
+sudo yum install gcc-c++ make
 ```
+
+**Note**: The nlohmann/json library is embedded in this IOC (in `tpx3HistogramApp/src/`) and does not need to be installed separately.
 
 ## Building
 
@@ -167,7 +169,7 @@ Followed by binary histogram data (32-bit integers in network byte order).
 ### Build Issues
 - Ensure EPICS_BASE is set correctly
 - Check C++17 compiler support
-- Verify nlohmann/json is installed
+- Verify json.hpp and json_fwd.hpp are in tpx3HistogramApp/src/ directory
 
 ### Runtime Issues
 - Check network connectivity to Timepix3 server

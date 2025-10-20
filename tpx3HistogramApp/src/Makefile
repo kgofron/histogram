@@ -22,9 +22,8 @@ tpx3Histogram_DBD += tpx3HistogramSupport.dbd
 # Add all the support libraries needed by this IOC
 tpx3Histogram_LIBS += asyn
 
-# Add C++17 support and nlohmann/json include
+# Add C++17 support
 tpx3Histogram_CXXFLAGS += -std=c++17
-tpx3Histogram_CXXFLAGS += -I/usr/include/nlohmann
 
 # tpx3Histogram_registerRecordDeviceDriver.cpp derives from tpx3Histogram.dbd
 tpx3Histogram_SRCS += tpx3Histogram_registerRecordDeviceDriver.cpp
