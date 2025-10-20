@@ -1,4 +1,6 @@
 # Database definition file for Timepix3 Histogram IOC
+# Author: K. Gofron
+# Last Modified: October 20, 2025
 # This file defines the database records and their relationships
 
 # Driver registration

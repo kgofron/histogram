@@ -1,6 +1,12 @@
-/* tpx3HistogramMain.cpp */
-/* Author:  Marty Kraimer Date:    17MAR2000 */
-/* Modified for Timepix3 Histogram IOC */
+/* 
+ * tpx3HistogramMain.cpp
+ * 
+ * Timepix3 Histogram IOC Main Entry Point
+ * 
+ * Original Author: Marty Kraimer Date: 17MAR2000
+ * Modified for Timepix3 Histogram IOC by: K. Gofron
+ * Last Modified: October 20, 2025
+ */
 
 #include <stddef.h>
 #include <stdlib.h>

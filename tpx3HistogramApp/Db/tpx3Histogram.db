@@ -1,4 +1,6 @@
 # Timepix3 Histogram Database
+# Author: K. Gofron
+# Last Modified: October 20, 2025
 # This file defines the EPICS records for the Timepix3 histogram IOC
 
 # Connection control records

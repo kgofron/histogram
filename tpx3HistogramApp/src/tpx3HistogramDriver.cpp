@@ -1,3 +1,16 @@
+/*
+ * tpx3HistogramDriver.cpp
+ * 
+ * Timepix3 Histogram IOC Driver Implementation
+ * 
+ * Author: K. Gofron
+ * Last Modified: October 20, 2025
+ * 
+ * This driver provides EPICS integration for Timepix3 histogram data acquisition.
+ * It handles real-time data processing, histogram accumulation, and provides
+ * configurable array sizes for flexible histogram analysis.
+ */
+
 #include "tpx3HistogramDriver.h"
 #include <epicsExport.h>
 #include <epicsThread.h>

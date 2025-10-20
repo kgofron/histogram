@@ -1,3 +1,15 @@
+/*
+ * tpx3HistogramDriver.h
+ * 
+ * Timepix3 Histogram IOC Driver Header
+ * 
+ * Author: K. Gofron
+ * Last Modified: October 20, 2025
+ * 
+ * This header defines the tpx3HistogramDriver class for EPICS integration
+ * with Timepix3 histogram data acquisition systems.
+ */
+
 #ifndef tpx3HistogramDriver_H
 #define tpx3HistogramDriver_H
 

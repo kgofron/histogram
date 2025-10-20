@@ -1,6 +1,8 @@
 #!../../bin/linux-x86_64/tpx3Histogram
 
 # Timepix3 Histogram IOC Startup Script
+# Author: K. Gofron
+# Last Modified: October 20, 2025
 # This script initializes and starts the Timepix3 histogram IOC
 
 < envPaths
