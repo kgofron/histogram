@@ -1318,12 +1318,12 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         callParamCallbacks(memoryUsageIndex_);
         last_memory_update_time_ = current_time_seconds;
         
-        printf("DEBUG: Memory usage breakdown - Histogram: %.3f MB, Time axis: %.3f MB, Samples: %.3f MB, Total: %.3f MB (bins: %d)\n", 
-               running_sum_ ? (running_sum_->get_bin_size() * sizeof(uint32_t) + (running_sum_->get_bin_size() + 1) * sizeof(double)) / (1024.0 * 1024.0) : 0.0,
-               histogram_time_data_.size() * sizeof(epicsFloat64) / (1024.0 * 1024.0),
-               (rate_samples_.size() + processing_time_samples_.size()) * sizeof(double) / (1024.0 * 1024.0),
-               memory_usage_,
-               running_sum_ ? (int)running_sum_->get_bin_size() : 0);
+        // printf("DEBUG: Memory usage breakdown - Histogram: %.3f MB, Time axis: %.3f MB, Samples: %.3f MB, Total: %.3f MB (bins: %d)\n", 
+        //        running_sum_ ? (running_sum_->get_bin_size() * sizeof(uint32_t) + (running_sum_->get_bin_size() + 1) * sizeof(double)) / (1024.0 * 1024.0) : 0.0,
+        //        histogram_time_data_.size() * sizeof(epicsFloat64) / (1024.0 * 1024.0),
+        //        (rate_samples_.size() + processing_time_samples_.size()) * sizeof(double) / (1024.0 * 1024.0),
+        //        memory_usage_,
+        //        running_sum_ ? (int)running_sum_->get_bin_size() : 0);
     }
     epicsMutexUnlock(mutex_);
 
