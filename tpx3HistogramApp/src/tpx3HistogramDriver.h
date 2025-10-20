@@ -272,6 +272,11 @@ private:
     double last_rate_update_time_;
     static const size_t MAX_RATE_SAMPLES = 10;  // Keep last 10 samples for averaging
     
+    // Processing time averaging variables
+    std::vector<double> processing_time_samples_;
+    double last_processing_time_update_;
+    static const size_t MAX_PROCESSING_TIME_SAMPLES = 10;  // Keep last 10 samples for averaging
+    
     // Methods
     void workerThread();
     void monitorThread();

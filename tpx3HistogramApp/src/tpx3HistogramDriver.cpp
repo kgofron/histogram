@@ -344,7 +344,9 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       previous_time_at_frame_(0.0),
       first_frame_received_(false),
       rate_samples_(),
-      last_rate_update_time_(0.0)
+      last_rate_update_time_(0.0),
+      processing_time_samples_(),
+      last_processing_time_update_(0.0)
 {
     // Create data directory
     std::filesystem::create_directories("data");
@@ -944,8 +946,7 @@ void tpx3HistogramDriver::monitorThread()
         
         // Simulate performance metrics
         if (running_ && connected_) {
-            // acquisition_rate_ is now calculated from frame numbers in processDataLine
-            processing_time_ = 0.1;  // 100ms
+            // acquisition_rate_ and processing_time_ are now calculated from real data
             memory_usage_ = 50.0;    // 50MB
         } else {
             acquisition_rate_ = 0.0;
@@ -1053,6 +1054,10 @@ epicsExportRegistrar(register_func_tpx3HistogramConfigure);
 
 // New histogram processing methods
 bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, size_t total_read) {
+    // Record start time for processing time calculation
+    epicsTimeStamp processing_start_time;
+    epicsTimeGetCurrent(&processing_start_time);
+    
     // Skip empty lines
     if (strlen(line_buffer) == 0) {
         return true;
@@ -1102,8 +1107,8 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
                        previous_frame_number_ + 1, frame_number, frame_diff - 1);
             }
             
-            // Only calculate rate if we have valid time difference (avoid division by zero and noise)
-            if (frame_diff > 0 && time_diff_seconds > 0.01) {  // Minimum 10ms time difference
+            // Only calculate rate if we have valid time difference (avoid division by zero)
+            if (frame_diff > 0 && time_diff_seconds > 0.0) {  // Any positive time difference
                 double current_rate = frame_diff / time_diff_seconds;
                 
                 // Add sample to our averaging buffer
@@ -1128,8 +1133,6 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
                     // printf("DEBUG: Averaged rate over %zu samples: %.2f Hz (current sample: %.2f Hz)\n", 
                     //        rate_samples_.size(), acquisition_rate_, current_rate);
                 }
-            } else if (time_diff_seconds <= 0.01) {
-                printf("DEBUG: Skipping rate calculation - time difference too small: %.6f s\n", time_diff_seconds);
             }
             
             // Update previous values
@@ -1247,6 +1250,38 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
     } catch (const std::exception& e) {
         printf("Error processing frame: %s\n", e.what());
     }
+
+    // Calculate processing time for this frame (always calculate, regardless of frame rate)
+    epicsTimeStamp processing_end_time;
+    epicsTimeGetCurrent(&processing_end_time);
+    double processing_time_ms = ((processing_end_time.secPastEpoch - processing_start_time.secPastEpoch) * 1000.0) +
+                               ((processing_end_time.nsec - processing_start_time.nsec) / 1e6);
+    
+    // Add to processing time samples for averaging (always add, even for small processing times)
+    epicsMutexLock(mutex_);
+    processing_time_samples_.push_back(processing_time_ms);
+    if (processing_time_samples_.size() > MAX_PROCESSING_TIME_SAMPLES) {
+        processing_time_samples_.erase(processing_time_samples_.begin());
+    }
+    
+    // Calculate average processing time
+    double sum = 0.0;
+    for (double time_ms : processing_time_samples_) {
+        sum += time_ms;
+    }
+    processing_time_ = sum / processing_time_samples_.size();
+    
+    // Update EPICS parameter once per second
+    double current_time_seconds = processing_end_time.secPastEpoch + processing_end_time.nsec / 1e9;
+    if (current_time_seconds - last_processing_time_update_ >= 1.0) {
+        setDoubleParam(processingTimeIndex_, processing_time_);
+        callParamCallbacks(processingTimeIndex_);
+        last_processing_time_update_ = current_time_seconds;
+        
+        // printf("DEBUG: Averaged processing time over %zu samples: %.3f ms\n", 
+        //        processing_time_samples_.size(), processing_time_);
+    }
+    epicsMutexUnlock(mutex_);
 
     return true;
 }
