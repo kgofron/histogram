@@ -11,7 +11,7 @@ epicsEnvSet("Sys", "TPX3-TEST:")
 epicsEnvSet("Dev", "Histogram:")
 
 # Set configurable parameters (can be overridden via command line)
-epicsEnvSet("MAX_BINS", "1000")
+epicsEnvSet("MAX_BINS", "10000")
 
 # Load the database definition
 dbLoadDatabase("../../dbd/tpx3Histogram.dbd")
