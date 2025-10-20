@@ -123,12 +123,12 @@ record(ai, "$(P)$(R)BIN_WIDTH_MS") {
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)$(R)TOTAL_TIME_NS") {
-    field(DESC, "Total time range in nanoseconds")
+record(ai, "$(P)$(R)TOTAL_TIME_MS") {
+    field(DESC, "Total time range in milliseconds")
     field(DTYP, "asynFloat64")
     field(INP, "@asyn($(PORT) $(ADDR))TOTAL_TIME")
-    field(PREC, "3")
-    field(EGU, "ns")
+    field(PREC, "6")
+    field(EGU, "ms")
     field(SCAN, "I/O Intr")
 }
 

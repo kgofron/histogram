@@ -411,7 +411,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setDoubleParam(processingTimeIndex_, 0.0);
     setDoubleParam(memoryUsageIndex_, 0.0);
     setDoubleParam(binWidthIndex_, TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_);  // Default bin width in milliseconds
-    setDoubleParam(totalTimeIndex_, (TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_)*frame_bin_size_);  // Total time in nanoseconds
+    setDoubleParam(totalTimeIndex_, (TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_)*frame_bin_size_);  // Total time in milliseconds
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, 1000);  // Default maximum bins for array record
     setStringParam(statusIndex_, "Initialized - Ready to connect");
@@ -424,7 +424,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     
     printf("DEBUG: Initialized frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
     printf("DEBUG: Calculated bin width = %.6f ms\n", TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_);
-    printf("DEBUG: Calculated total time = %.6f ns\n", (TPX3_TDC_CLOCK_PERIOD_SEC*1e9*frame_bin_width_)*frame_bin_size_);
+    printf("DEBUG: Calculated total time = %.6f ms\n", (TPX3_TDC_CLOCK_PERIOD_SEC*1e3*frame_bin_width_)*frame_bin_size_);
     fflush(stdout);
     
     // Create some test histogram data for debugging
@@ -628,8 +628,8 @@ asynStatus tpx3HistogramDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *v
         *value = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_;
         printf("DEBUG: readFloat64 binWidthIndex_ - frame_bin_width_=%d, calculated value=%.6f\n", frame_bin_width_, *value);
     } else if (function == totalTimeIndex_) {
-        // Calculate total time range: bin_width * frame_bin_size
-        *value = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e9 * frame_bin_width_) * frame_bin_size_;
+        // Calculate total time range: bin_width * frame_bin_size (in milliseconds)
+        *value = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_) * frame_bin_size_;
         printf("DEBUG: readFloat64 totalTimeIndex_ - frame_bin_width_=%d, frame_bin_size_=%d, calculated value=%.6f\n", 
                frame_bin_width_, frame_bin_size_, *value);
     } else if (function == timeAtFrameIndex_) {
@@ -1072,14 +1072,14 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         
         // Calculate and set the derived parameters directly
         double calculated_bin_width = TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_;  // Convert to milliseconds
-        double calculated_total_time = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e9 * frame_bin_width_) * frame_bin_size_;  // Keep total time in nanoseconds
+        double calculated_total_time = (TPX3_TDC_CLOCK_PERIOD_SEC * 1e3 * frame_bin_width_) * frame_bin_size_;  // Convert to milliseconds
         
         setDoubleParam(binWidthIndex_, calculated_bin_width);
         setDoubleParam(totalTimeIndex_, calculated_total_time);
         
         printf("DEBUG: Updated frame data - bin_size=%d, bin_width=%d\n", frame_bin_size_, frame_bin_width_);
         printf("DEBUG: Calculated bin width = %.6f ms\n", calculated_bin_width);
-        printf("DEBUG: Calculated total time = %.6f ns\n", calculated_total_time);
+        printf("DEBUG: Calculated total time = %.6f ms\n", calculated_total_time);
         
         // Notify parameter changes
         callParamCallbacks(timeAtFrameIndex_);

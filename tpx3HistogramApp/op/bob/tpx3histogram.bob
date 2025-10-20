@@ -394,14 +394,14 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>TotalTimeLabel</name>
-        <text>Total Time (ns):</text>
+        <text>Total Time (ms):</text>
         <x>260</x>
         <y>85</y>
         <width>120</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>TotalTimeDisplay</name>
-        <pv_name>$(P)$(R)TOTAL_TIME_NS</pv_name>
+        <pv_name>$(P)$(R)TOTAL_TIME_MS</pv_name>
         <x>380</x>
         <y>80</y>
         <width>120</width>
