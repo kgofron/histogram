@@ -346,7 +346,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       rate_samples_(),
       last_rate_update_time_(0.0),
       processing_time_samples_(),
-      last_processing_time_update_(0.0)
+      last_processing_time_update_(0.0),
+      last_memory_update_time_(0.0)
 {
     // Create data directory
     std::filesystem::create_directories("data");
@@ -946,12 +947,11 @@ void tpx3HistogramDriver::monitorThread()
         
         // Simulate performance metrics
         if (running_ && connected_) {
-            // acquisition_rate_ and processing_time_ are now calculated from real data
-            memory_usage_ = 50.0;    // 50MB
+            // acquisition_rate_, processing_time_, and memory_usage_ are now calculated from real data
         } else {
             acquisition_rate_ = 0.0;
             processing_time_ = 0.0;
-            memory_usage_ = 10.0;
+            memory_usage_ = 0.0;
         }
         
         setDoubleParam(acquisitionRateIndex_, acquisition_rate_);
@@ -1027,6 +1027,35 @@ extern "C" int tpx3HistogramConfigure(const char* portName, int maxAddr)
     printf("DEBUG: Timepix3 Histogram Driver configured on port %s\n", portName);
     fflush(stdout);
     return 0;
+}
+
+// Calculate actual memory usage in MB
+double tpx3HistogramDriver::calculateMemoryUsageMB() {
+    double total_memory_mb = 0.0;
+    
+    // Calculate memory for histogram data structures
+    if (running_sum_) {
+        size_t bin_size = running_sum_->get_bin_size();
+        // Memory for bin values (uint32_t per bin) + bin edges (double per bin edge)
+        total_memory_mb += (bin_size * sizeof(uint32_t) + (bin_size + 1) * sizeof(double)) / (1024.0 * 1024.0);
+    }
+    
+    // Calculate memory for time axis data (use actual size, not capacity)
+    total_memory_mb += histogram_time_data_.size() * sizeof(epicsFloat64) / (1024.0 * 1024.0);
+    
+    // Calculate memory for rate and processing time sample buffers (use actual size)
+    total_memory_mb += (rate_samples_.size() + processing_time_samples_.size()) * sizeof(double) / (1024.0 * 1024.0);
+    
+    // Calculate memory for line buffer (use actual size)
+    total_memory_mb += line_buffer_.size() * sizeof(char) / (1024.0 * 1024.0);
+    
+    // Add estimated memory for other data structures (strings, etc.)
+    total_memory_mb += 0.1;  // ~0.1 MB for strings and other small structures (reduced from 1.0 MB)
+    
+    // Add memory for max_bins_ configuration and other member variables
+    total_memory_mb += max_bins_ * sizeof(epicsInt32) / (1024.0 * 1024.0);  // Memory allocated for max bins array
+    
+    return total_memory_mb;
 }
 
 // iocsh registration
@@ -1280,6 +1309,21 @@ bool tpx3HistogramDriver::processDataLine(char* line_buffer, char* newline_pos, 
         
         // printf("DEBUG: Averaged processing time over %zu samples: %.3f ms\n", 
         //        processing_time_samples_.size(), processing_time_);
+    }
+    
+    // Update memory usage every 5 seconds
+    if (current_time_seconds - last_memory_update_time_ >= MEMORY_UPDATE_INTERVAL_SEC) {
+        memory_usage_ = calculateMemoryUsageMB();
+        setDoubleParam(memoryUsageIndex_, memory_usage_);
+        callParamCallbacks(memoryUsageIndex_);
+        last_memory_update_time_ = current_time_seconds;
+        
+        printf("DEBUG: Memory usage breakdown - Histogram: %.3f MB, Time axis: %.3f MB, Samples: %.3f MB, Total: %.3f MB (bins: %d)\n", 
+               running_sum_ ? (running_sum_->get_bin_size() * sizeof(uint32_t) + (running_sum_->get_bin_size() + 1) * sizeof(double)) / (1024.0 * 1024.0) : 0.0,
+               histogram_time_data_.size() * sizeof(epicsFloat64) / (1024.0 * 1024.0),
+               (rate_samples_.size() + processing_time_samples_.size()) * sizeof(double) / (1024.0 * 1024.0),
+               memory_usage_,
+               running_sum_ ? (int)running_sum_->get_bin_size() : 0);
     }
     epicsMutexUnlock(mutex_);
 

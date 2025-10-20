@@ -277,6 +277,10 @@ private:
     double last_processing_time_update_;
     static const size_t MAX_PROCESSING_TIME_SAMPLES = 10;  // Keep last 10 samples for averaging
     
+    // Memory usage calculation variables
+    double last_memory_update_time_;
+    static const size_t MEMORY_UPDATE_INTERVAL_SEC = 5;  // Update memory usage every 5 seconds
+    
     // Methods
     void workerThread();
     void monitorThread();
@@ -292,6 +296,7 @@ private:
     void processFrame(const HistogramData& frame_data);
     void saveRunningSum();
     void saveHistogramToFile(const std::string& filename, const HistogramData& histogram);
+    double calculateMemoryUsageMB();  // Calculate actual memory usage in MB
 };
 
 // Function to get driver instance
