@@ -1310,8 +1310,8 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
     }
     printf("DEBUG: Finished pushing histogram array data and time axis data\n");
     
-    // Save updated running sum
-    saveRunningSum();
+    // Save updated running sum, not used for now
+    // saveRunningSum();
     
     epicsMutexUnlock(mutex_);
 }
