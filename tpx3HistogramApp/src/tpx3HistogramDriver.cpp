@@ -1513,23 +1513,41 @@ void tpx3HistogramDriver::saveHistogramToFile(const std::string& filename, const
 
     file << "# Time of Flight Histogram Data\n";
     file << "# Bins: " << histogram.get_bin_size() << "\n";
+    file << "# Time units: milliseconds (ms)\n";
+    file << "# Count units: events\n";
+    file << "# Format: time_ms\tcount\n";
     file << "#\n";
 
     for (size_t i = 0; i < histogram.get_bin_size(); ++i) {
+        double bin_time_ms = 0.0;
+        if (i < histogram_time_data_.size()) {
+            bin_time_ms = histogram_time_data_[i];
+        } else {
+            // Fallback calculation if histogram_time_data_ is not available
+            bin_time_ms = (frame_bin_offset_ + i * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
+        }
+        
         if (histogram.get_data_type() == HistogramData::DataType::RUNNING_SUM) {
             file << std::scientific << std::setprecision(9) 
-                 << histogram.get_bin_edges()[i] << "\t" 
+                 << bin_time_ms << "\t" 
                  << histogram.get_bin_value_64(i) << "\n";
         } else {
             file << std::scientific << std::setprecision(9) 
-                 << histogram.get_bin_edges()[i] << "\t" 
+                 << bin_time_ms << "\t" 
                  << histogram.get_bin_value_32(i) << "\n";
         }
     }
     
-    // Write last bin edge
+    // Write last bin edge (calculate it)
+    double last_bin_time_ms = 0.0;
+    if (histogram.get_bin_size() < histogram_time_data_.size()) {
+        last_bin_time_ms = histogram_time_data_[histogram.get_bin_size()];
+    } else {
+        // Fallback calculation
+        last_bin_time_ms = (frame_bin_offset_ + histogram.get_bin_size() * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
+    }
     file << std::scientific << std::setprecision(9) 
-         << histogram.get_bin_edges()[histogram.get_bin_size()] << "\n";
+         << last_bin_time_ms << "\n";
     
     file.close();
 }
