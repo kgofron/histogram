@@ -75,12 +75,14 @@ cd iocBoot/ioctpx3Histogram
 - `TPX3:FRAME_COUNT` - Total frames processed
 - `TPX3:TOTAL_COUNTS` - Total counts accumulated
 - `TPX3:ACQUISITION_RATE` - Frames per second
-- `TPX3:BIN_0` through `TPX3:BIN_4` - Individual bin values
 - `TPX3:HISTOGRAM_DATA` - Full histogram data (waveform record)
+- `TPX3:HISTOGRAM_FRAME` - Individual frame histogram data (waveform record)
+- `TPX3:HISTOGRAM_TIME_MS` - Time axis data in milliseconds (waveform record)
 
 ### Time Information
-- `TPX3:BIN_WIDTH_PS` - Bin width in picoseconds
-- `TPX3:TOTAL_TIME_NS` - Total time range in nanoseconds
+- `TPX3:BIN_WIDTH_MS` - Bin width in milliseconds
+- `TPX3:BIN_OFFSET_MS` - Bin offset in milliseconds
+- `TPX3:TOTAL_TIME_MS` - Total time range in milliseconds
 
 ### File Output
 - `TPX3:SAVE_DATA` - Save histogram data to file
@@ -96,7 +98,7 @@ cd iocBoot/ioctpx3Histogram
 
 ### Connect to Server
 ```bash
-caput TPX3:HOST "192.168.1.100"
+caput TPX3:HOST "192.168.100.1"
 caput TPX3:PORT "9000"
 caput TPX3:CONNECT 1
 ```
@@ -113,8 +115,9 @@ caget TPX3:TOTAL_COUNTS
 caget TPX3:CONNECTED
 
 # Get individual bin values
-caget TPX3:BIN_0
-caget TPX3:BIN_1
+caget TPX3:HISTOGRAM_DATA
+caget TPX3:HISTOGRAM_FRAME
+caget TPX3:HISTOGRAM_TIME_MS
 ```
 
 ### Control Operations
@@ -137,6 +140,35 @@ caput TPX3:FILENAME "my_histogram.txt"
 # Save data
 caput TPX3:SAVE_DATA 1
 ```
+
+## Serval TPX3 Integration Setup
+
+This histogram IOC is designed to work with Serval TPX3 cameras. The communication setup is:
+
+### Network Configuration
+- **Serval TPX3 Camera**: Configured as TCP server/listener
+  - PV: `TPX3-TEST:cam1:PrvHstFilePath` 
+  - Value: `tcp://listen@localhost:8451`
+- **Histogram IOC**: Configured as TCP client
+  - HOST: `127.0.0.1` (localhost)
+  - PORT: `8451`
+
+### Data Flow
+1. Serval TPX3 camera sends histogram data via TCP to port 8451
+2. Histogram IOC connects as client to receive the data
+3. Data is processed and made available through EPICS PVs
+4. Real-time plotting and file saving capabilities
+
+### Startup Order
+1. Start Serval TPX3 camera first (establishes TCP listener)
+2. Start histogram IOC (connects as client)
+3. Use EPICS PVs to control and monitor the histogram
+
+### Default Configuration
+The histogram IOC is pre-configured to connect to:
+- Host: `127.0.0.1` (localhost)
+- Port: `8451`
+- Max Bins: `10000` (configurable)
 
 ## Integration with Existing Code
 
