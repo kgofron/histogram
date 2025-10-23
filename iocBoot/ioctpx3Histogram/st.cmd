@@ -13,7 +13,9 @@ epicsEnvSet("Sys", "TPX3-TEST:")
 epicsEnvSet("Dev", "Histogram:")
 
 # Set configurable parameters (can be overridden via command line)
-epicsEnvSet("MAX_BINS", "10000")
+# This is the maximum number of bins for the histogram
+# The value 1,000,000 allows 16.6666 ns minimum bin width, at SNS 60 Hz neutron source.
+epicsEnvSet("MAX_BINS", "1000000")
 
 # Load the database definition
 dbLoadDatabase("../../dbd/tpx3Histogram.dbd")
