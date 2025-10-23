@@ -196,21 +196,23 @@
         <pv_name>$(P)$(R)FILENAME</pv_name>
         <x>370</x>
         <y>10</y>
-        <width>380</width>
+        <width>780</width>
         <height>30</height>
+        <format>6</format>
+        <show_units>false</show_units>
       </widget>
       <widget type="label" version="2.0.0">
         <name>ErrorCountLabel</name>
         <text>Errors:</text>
         <x>800</x>
-        <y>45</y>
+        <y>55</y>
         <width>60</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>ErrorCountDisplay</name>
         <pv_name>$(P)$(R)ERROR_COUNT</pv_name>
         <x>880</x>
-        <y>40</y>
+        <y>50</y>
         <width>80</width>
         <height>30</height>
         <background_color>
@@ -226,7 +228,7 @@
       <widget type="fileselector" version="2.0.0">
         <name>File Selector</name>
         <pv_name>$(P)$(R)FILENAME</pv_name>
-        <x>750</x>
+        <x>1150</x>
         <y>10</y>
         <width>30</width>
         <height>30</height>

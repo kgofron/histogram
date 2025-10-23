@@ -143,10 +143,12 @@ record(ai, "$(P)$(R)TOTAL_TIME_MS") {
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)FILENAME") {
+record(waveform, "$(P)$(R)FILENAME") {
     field(DESC, "Filename for saving data")
     field(DTYP, "asynOctetWrite")
-    field(OUT, "@asyn($(PORT) $(ADDR))FILENAME")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))FILENAME")
 }
 
 # Frame data parameters from JSON

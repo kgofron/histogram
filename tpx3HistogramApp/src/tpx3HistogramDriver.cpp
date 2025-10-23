@@ -556,6 +556,7 @@ asynStatus tpx3HistogramDriver::writeOctet(asynUser *pasynUser, const char *valu
         setStringParam(hostIndex_, value);
         printf("Host set to %s\n", host_.c_str());
     } else if (function == filenameIndex_) {
+        // Handle FILENAME as waveform record with CHAR type
         setStringParam(filenameIndex_, value);
     } else {
         status = asynPortDriver::writeOctet(pasynUser, value, maxChars, nActual);
