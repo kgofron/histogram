@@ -24,6 +24,7 @@
 #include <mutex>
 #include <memory>
 #include <queue>
+#include <deque>
 #include <functional>
 #include <stdexcept>
 #include <system_error>
@@ -209,6 +210,8 @@ private:
     int histogramDataIndex_;
     int histogramFrameIndex_;    // Individual frame histogram data
     int histogramTimeMsIndex_;   // Time axis for histogram in milliseconds
+    int histogramSumNFramesIndex_; // Sum of last N frame histograms
+    int framesToSumIndex_;       // Number of frames to sum
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
     // Individual bin display parameters removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
@@ -230,6 +233,8 @@ private:
     uint64_t frame_count_;
     uint64_t total_counts_;
     std::unique_ptr<HistogramData> running_sum_;
+    std::deque<HistogramData> frame_buffer_;  // Buffer for last N frames
+    int frames_to_sum_;                       // Number of frames to sum
     std::vector<char> line_buffer_;
     size_t total_read_;
     

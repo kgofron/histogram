@@ -235,4 +235,23 @@ record(waveform, "$(P)$(R)HISTOGRAM_TIME_MS") {
     field(SCAN, "I/O Intr")
 }
 
+# Configuration for sum of last N frames
+record(ai, "$(P)$(R)FRAMES_TO_SUM") {
+    field(DESC, "Number of frames to sum")
+    field(DTYP, "asynInt32")
+    field(INP, "@asyn($(PORT) $(ADDR))FRAMES_TO_SUM")
+    field(PREC, "0")
+    field(SCAN, "I/O Intr")
+}
+
+# Waveform record for sum of last N frame histograms (configurable size)
+record(waveform, "$(P)$(R)HISTOGRAM_SUM_N_FRAMES") {
+    field(DESC, "Sum of last N frame histograms")
+    field(DTYP, "asyn$(TYPE)ArrayIn")
+    field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_SUM_N_FRAMES")
+    field(FTVL, "$(FTVL)")
+    field(NELM, "$(NELEMENTS)")
+    field(SCAN, "I/O Intr")
+}
+
 # Note: The complete histogram data is available via the HISTOGRAM_DATA waveform record.

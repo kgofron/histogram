@@ -4,12 +4,12 @@
   <macros>
     <R>Histogram:</R>
   </macros>
-  <width>1400</width>
-  <height>1000</height>
+  <width>2220</width>
+  <height>1350</height>
   <widget type="group" version="3.0.0">
     <name>TPX3_Histogram_Control</name>
     <width>1400</width>
-    <height>1000</height>
+    <height>970</height>
     <widget type="label" version="2.0.0">
       <name>Title</name>
       <text>Timepix3 Histogram IOC Control Panel</text>
@@ -372,6 +372,32 @@
           </color>
         </border_color>
       </widget>
+      <widget type="label" version="2.0.0">
+        <name>FramesToSumLabel</name>
+        <text>Frames to Sum:</text>
+        <x>800</x>
+        <y>85</y>
+        <width>120</width>
+      </widget>
+      <widget type="spinner" version="2.0.0">
+        <name>FramesToSumSpinner</name>
+        <pv_name>$(P)$(R)FRAMES_TO_SUM</pv_name>
+        <x>920</x>
+        <y>80</y>
+        <width>100</width>
+        <height>30</height>
+        <minimum>1.0</minimum>
+        <maximum>1000.0</maximum>
+        <background_color>
+          <color red="255" green="255" blue="200">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="128" green="128" blue="0">
+          </color>
+        </border_color>
+      </widget>
     </widget>
     <widget type="group" version="3.0.0">
       <name>FrameData</name>
@@ -518,7 +544,7 @@
       </widget>
       <widget type="label" version="2.0.0">
         <name>HistogramDataLabel</name>
-        <text>Full Histogram Data (1000 bins):</text>
+        <text>Full Histogram Data (Accumulated):</text>
         <x>20</x>
         <y>40</y>
         <width>200</width>
@@ -541,17 +567,41 @@
         </border_color>
       </widget>
       <widget type="label" version="2.0.0">
+        <name>HistogramSumNFramesLabel</name>
+        <text>Sum of Last N Frames:</text>
+        <x>20</x>
+        <y>80</y>
+        <width>200</width>
+      </widget>
+      <widget type="textupdate" version="2.0.0">
+        <name>HistogramSumNFramesDisplay</name>
+        <pv_name>$(P)$(R)HISTOGRAM_SUM_N_FRAMES</pv_name>
+        <x>220</x>
+        <y>80</y>
+        <width>1080</width>
+        <height>30</height>
+        <background_color>
+          <color red="200" green="255" blue="200">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="0" green="128" blue="0">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
         <name>HistogramTimeLabel</name>
         <text>Histogram Time Axis (ms):</text>
         <x>20</x>
-        <y>80</y>
+        <y>120</y>
         <width>200</width>
       </widget>
       <widget type="textupdate" version="2.0.0">
         <name>HistogramTimeDisplay</name>
         <pv_name>$(P)$(R)HISTOGRAM_TIME_MS</pv_name>
         <x>220</x>
-        <y>80</y>
+        <y>120</y>
         <width>1080</width>
         <height>30</height>
         <background_color>
@@ -743,7 +793,7 @@
     <x>1410</x>
     <y>530</y>
     <width>800</width>
-    <height>500</height>
+    <height>400</height>
     <x_axis>
       <title>ToF [ms]</title>
       <autoscale>true</autoscale>
@@ -795,6 +845,73 @@
         <trace_type>1</trace_type>
         <color>
           <color red="0" green="0" blue="255">
+          </color>
+        </color>
+        <line_width>1</line_width>
+        <line_style>0</line_style>
+        <point_type>0</point_type>
+        <point_size>10</point_size>
+        <visible>true</visible>
+      </trace>
+    </traces>
+  </widget>
+  <widget type="xyplot" version="3.0.0">
+    <name>X/Y Plot_3</name>
+    <x>1410</x>
+    <y>940</y>
+    <width>800</width>
+    <height>400</height>
+    <x_axis>
+      <title>ToF [ms]</title>
+      <autoscale>true</autoscale>
+      <log_scale>false</log_scale>
+      <minimum>0.0</minimum>
+      <maximum>25.0</maximum>
+      <show_grid>false</show_grid>
+      <title_font>
+        <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+        </font>
+      </title_font>
+      <scale_font>
+        <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+        </font>
+      </scale_font>
+      <visible>true</visible>
+    </x_axis>
+    <y_axes>
+      <y_axis>
+        <title>Counts [Sum N Frames]</title>
+        <autoscale>true</autoscale>
+        <log_scale>false</log_scale>
+        <minimum>0.0</minimum>
+        <maximum>600.0</maximum>
+        <show_grid>false</show_grid>
+        <title_font>
+          <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+          </font>
+        </title_font>
+        <scale_font>
+          <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+          </font>
+        </scale_font>
+        <on_right>false</on_right>
+        <visible>true</visible>
+        <color>
+          <color name="Text" red="0" green="0" blue="0">
+          </color>
+        </color>
+      </y_axis>
+    </y_axes>
+    <traces>
+      <trace>
+        <name>$(traces[0].y_pv)</name>
+        <x_pv>$(P)$(R)HISTOGRAM_TIME_MS</x_pv>
+        <y_pv>$(P)$(R)HISTOGRAM_SUM_N_FRAMES</y_pv>
+        <err_pv></err_pv>
+        <axis>0</axis>
+        <trace_type>1</trace_type>
+        <color>
+          <color red="0" green="128" blue="0">
           </color>
         </color>
         <line_width>1</line_width>
