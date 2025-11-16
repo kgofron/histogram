@@ -238,7 +238,7 @@
       <name>DataDisplay</name>
       <x>10</x>
       <y>360</y>
-      <width>1350</width>
+      <width>1400</width>
       <height>160</height>
       <widget type="label" version="2.0.0">
         <name>DataDisplayLabel</name>
@@ -395,6 +395,32 @@
         <border_width>1</border_width>
         <border_color>
           <color red="128" green="128" blue="0">
+          </color>
+        </border_color>
+      </widget>
+      <widget type="label" version="2.0.0">
+        <name>SumUpdateIntervalLabel</name>
+        <text>Sum Update Interval (frames):</text>
+        <x>1040</x>
+        <y>85</y>
+        <width>220</width>
+      </widget>
+      <widget type="spinner" version="2.0.0">
+        <name>SumUpdateIntervalSpinner</name>
+        <pv_name>$(P)$(R)SUM_UPDATE_INTERVAL_FRAMES</pv_name>
+        <x>1270</x>
+        <y>80</y>
+        <width>80</width>
+        <height>30</height>
+        <minimum>1.0</minimum>
+        <maximum>10000.0</maximum>
+        <background_color>
+          <color red="200" green="255" blue="200">
+          </color>
+        </background_color>
+        <border_width>1</border_width>
+        <border_color>
+          <color red="0" green="128" blue="0">
           </color>
         </border_color>
       </widget>
