@@ -387,7 +387,7 @@
         <width>100</width>
         <height>30</height>
         <minimum>1.0</minimum>
-        <maximum>1000.0</maximum>
+        <maximum>100000.0</maximum>
         <background_color>
           <color red="255" green="255" blue="200">
           </color>

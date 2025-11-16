@@ -547,14 +547,15 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
         printf("Maximum bins set to %d\n", value);
     } else if (function == framesToSumIndex_) {
         epicsMutexLock(mutex_);
-        frames_to_sum_ = (value > 0) ? value : 1;  // Ensure at least 1
+        // Clamp value to valid range [1, 100000]
+        frames_to_sum_ = (value < 1) ? 1 : ((value > 100000) ? 100000 : value);
         setIntegerParam(framesToSumIndex_, frames_to_sum_);
         // Trim buffer if it exceeds the new limit
         while (frame_buffer_.size() > static_cast<size_t>(frames_to_sum_)) {
             frame_buffer_.pop_front();
         }
         epicsMutexUnlock(mutex_);
-        printf("Frames to sum set to %d\n", frames_to_sum_);
+        printf("Frames to sum set to %d (runtime update)\n", frames_to_sum_);
     } else {
         status = asynPortDriver::writeInt32(pasynUser, value);
     }
