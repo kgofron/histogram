@@ -328,6 +328,8 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       running_sum_(nullptr),
       frame_buffer_(),
       frames_to_sum_(10),  // Default to sum last 10 frames
+      sum_update_interval_frames_(1),  // Default to update every frame (can be changed for performance)
+      frames_since_last_sum_update_(0),  // Counter for frames since last update
       line_buffer_(MAX_BUFFER_SIZE),
       total_read_(0),
       bin_width_(384000),
@@ -388,8 +390,9 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("HISTOGRAM_FRAME", asynParamInt32Array, &histogramFrameIndex_);
     createParam("HISTOGRAM_TIME_MS", asynParamFloat64Array, &histogramTimeMsIndex_);
     printf("DEBUG: Created HISTOGRAM_TIME_MS parameter with index %d\n", histogramTimeMsIndex_);
-    createParam("HISTOGRAM_SUM_N_FRAMES", asynParamInt32Array, &histogramSumNFramesIndex_);
+    createParam("HISTOGRAM_SUM_N_FRAMES", asynParamFloat64Array, &histogramSumNFramesIndex_);
     createParam("FRAMES_TO_SUM", asynParamInt32, &framesToSumIndex_);
+    createParam("SUM_UPDATE_INTERVAL_FRAMES", asynParamInt32, &sumUpdateIntervalFramesIndex_);
     createParam("NUMBER_OF_BINS", asynParamInt32, &numberOfBinsIndex_);
     createParam("MAX_BINS", asynParamInt32, &maxBinsIndex_);
     
@@ -430,6 +433,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     printf("  HISTOGRAM_TIME_MS=%d\n", histogramTimeMsIndex_);
     printf("  HISTOGRAM_SUM_N_FRAMES=%d\n", histogramSumNFramesIndex_);
     printf("  FRAMES_TO_SUM=%d\n", framesToSumIndex_);
+    printf("  SUM_UPDATE_INTERVAL_FRAMES=%d\n", sumUpdateIntervalFramesIndex_);
     printf("  NUMBER_OF_BINS=%d\n", numberOfBinsIndex_);
     printf("  MAX_BINS=%d\n", maxBinsIndex_);
     
@@ -447,6 +451,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     setIntegerParam(numberOfBinsIndex_, number_of_bins_);
     setIntegerParam(maxBinsIndex_, max_bins_);  // Configurable maximum bins for array record
     setIntegerParam(framesToSumIndex_, frames_to_sum_);  // Default number of frames to sum
+    setIntegerParam(sumUpdateIntervalFramesIndex_, sum_update_interval_frames_);  // Default update interval
     setStringParam(statusIndex_, "Initialized - Ready to connect");
     
     // Initialize frame data parameters
@@ -556,6 +561,14 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
         }
         epicsMutexUnlock(mutex_);
         printf("Frames to sum set to %d (runtime update)\n", frames_to_sum_);
+    } else if (function == sumUpdateIntervalFramesIndex_) {
+        epicsMutexLock(mutex_);
+        // Clamp value to valid range [1, 10000]
+        sum_update_interval_frames_ = (value < 1) ? 1 : ((value > 10000) ? 10000 : value);
+        setIntegerParam(sumUpdateIntervalFramesIndex_, sum_update_interval_frames_);
+        frames_since_last_sum_update_ = 0;  // Reset counter on change
+        epicsMutexUnlock(mutex_);
+        printf("Sum update interval set to %d frames (runtime update)\n", sum_update_interval_frames_);
     } else {
         status = asynPortDriver::writeInt32(pasynUser, value);
     }
@@ -604,6 +617,8 @@ asynStatus tpx3HistogramDriver::readInt32(asynUser *pasynUser, epicsInt32 *value
         *value = max_bins_; // Configurable maximum bins
     } else if (function == framesToSumIndex_) {
         *value = frames_to_sum_;
+    } else if (function == sumUpdateIntervalFramesIndex_) {
+        *value = sum_update_interval_frames_;
     } else if (function == frameBinSizeIndex_) {
         *value = frame_bin_size_;
     } else if (function == frameBinWidthIndex_) {
@@ -742,47 +757,6 @@ asynStatus tpx3HistogramDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *
         }
         
         epicsMutexUnlock(mutex_);
-    } else if (function == histogramSumNFramesIndex_) {
-        // Return sum of last N frames
-        epicsMutexLock(mutex_);
-        
-        if (!frame_buffer_.empty()) {
-            // Calculate sum of all frames in buffer
-            size_t bin_size = frame_buffer_[0].get_bin_size();
-            size_t elements_to_copy = std::min(nElements, bin_size);
-            
-            // Initialize sum array
-            std::vector<uint64_t> sum_array(bin_size, 0);
-            
-            // Sum all frames in buffer
-            for (const auto& frame : frame_buffer_) {
-                if (frame.get_bin_size() == bin_size) {
-                    for (size_t i = 0; i < bin_size; ++i) {
-                        sum_array[i] += frame.get_bin_value_32(i);
-                    }
-                }
-            }
-            
-            // Copy to output array (with overflow protection)
-            for (size_t i = 0; i < elements_to_copy; ++i) {
-                value[i] = (sum_array[i] > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(sum_array[i]);
-            }
-            
-            // Zero out remaining elements
-            for (size_t i = elements_to_copy; i < nElements; ++i) {
-                value[i] = 0;
-            }
-            
-            *nIn = nElements;
-        } else {
-            // No frames in buffer, return zeros
-            for (size_t i = 0; i < nElements; ++i) {
-                value[i] = 0;
-            }
-            *nIn = nElements;
-        }
-        
-        epicsMutexUnlock(mutex_);
     } else {
         // printf("DEBUG: Function %d does not match histogramDataIndex_ %d, calling parent\n", function, histogramDataIndex_);
         status = asynPortDriver::readInt32Array(pasynUser, value, nElements, nIn);
@@ -856,6 +830,7 @@ void tpx3HistogramDriver::reset()
     total_counts_ = 0;
     running_sum_ = nullptr;
     frame_buffer_.clear();  // Clear frame buffer on reset
+    frames_since_last_sum_update_ = 0;  // Reset sum update counter
     total_read_ = 0;
     
     setIntegerParam(frameCountIndex_, 0);
@@ -1540,7 +1515,7 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
         doCallbacksInt32Array(frame_array_data.data(), bin_size, histogramFrameIndex_, 0);
         // printf("DEBUG: Finished pushing frame data\n");
         
-        // Add frame to buffer for sum of last N frames
+        // Add frame to buffer for sum of last N frames (always add frames to buffer)
         frame_buffer_.push_back(frame_data);
         
         // Remove old frames if buffer exceeds frames_to_sum_
@@ -1548,9 +1523,14 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
             frame_buffer_.pop_front();
         }
         
-        // Calculate and push sum of last N frames
-        if (!frame_buffer_.empty()) {
-            std::vector<epicsInt32> sum_array_data(bin_size, 0);
+        // Increment counter for frames since last sum update
+        frames_since_last_sum_update_++;
+        
+        // Calculate and push sum of last N frames only at specified interval (for performance)
+        if (frames_since_last_sum_update_ >= sum_update_interval_frames_ && !frame_buffer_.empty()) {
+            frames_since_last_sum_update_ = 0;  // Reset counter
+            
+            std::vector<epicsFloat64> sum_array_data(bin_size, 0.0);
             std::vector<uint64_t> sum_array_64(bin_size, 0);
             
             // Sum all frames in buffer
@@ -1562,12 +1542,12 @@ void tpx3HistogramDriver::processFrame(const HistogramData& frame_data) {
                 }
             }
             
-            // Convert to epicsInt32 with overflow protection
+            // Convert to epicsFloat64 (64-bit double precision, no overflow issues)
             for (size_t i = 0; i < bin_size; ++i) {
-                sum_array_data[i] = (sum_array_64[i] > UINT32_MAX) ? UINT32_MAX : static_cast<epicsInt32>(sum_array_64[i]);
+                sum_array_data[i] = static_cast<epicsFloat64>(sum_array_64[i]);
             }
             
-            doCallbacksInt32Array(sum_array_data.data(), bin_size, histogramSumNFramesIndex_, 0);
+            doCallbacksFloat64Array(sum_array_data.data(), bin_size, histogramSumNFramesIndex_, 0);
         }
         
             // Also calculate and push the time axis data (in milliseconds)

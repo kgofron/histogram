@@ -245,12 +245,22 @@ record(longout, "$(P)$(R)FRAMES_TO_SUM") {
     field(DRVH, "100000")
 }
 
-# Waveform record for sum of last N frame histograms (configurable size)
+# Configuration for sum update interval (writable for runtime performance tuning)
+record(longout, "$(P)$(R)SUM_UPDATE_INTERVAL_FRAMES") {
+    field(DESC, "Update interval for sum computation (frames)")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))SUM_UPDATE_INTERVAL_FRAMES")
+    field(PREC, "0")
+    field(DRVL, "1")
+    field(DRVH, "10000")
+}
+
+# Waveform record for sum of last N frame histograms (64-bit to prevent overflow)
 record(waveform, "$(P)$(R)HISTOGRAM_SUM_N_FRAMES") {
     field(DESC, "Sum of last N frame histograms")
-    field(DTYP, "asyn$(TYPE)ArrayIn")
+    field(DTYP, "asynFloat64ArrayIn")
     field(INP, "@asyn($(PORT) $(ADDR))HISTOGRAM_SUM_N_FRAMES")
-    field(FTVL, "$(FTVL)")
+    field(FTVL, "DOUBLE")
     field(NELM, "$(NELEMENTS)")
     field(SCAN, "I/O Intr")
 }

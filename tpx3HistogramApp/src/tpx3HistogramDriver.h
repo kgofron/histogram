@@ -212,6 +212,7 @@ private:
     int histogramTimeMsIndex_;   // Time axis for histogram in milliseconds
     int histogramSumNFramesIndex_; // Sum of last N frame histograms
     int framesToSumIndex_;       // Number of frames to sum
+    int sumUpdateIntervalFramesIndex_;  // Update interval for sum computation (frames)
     int numberOfBinsIndex_;
     int maxBinsIndex_;           // Maximum number of bins for array record
     // Individual bin display parameters removed - use HISTOGRAM_DATA and HISTOGRAM_FRAME arrays instead
@@ -235,6 +236,8 @@ private:
     std::unique_ptr<HistogramData> running_sum_;
     std::deque<HistogramData> frame_buffer_;  // Buffer for last N frames
     int frames_to_sum_;                       // Number of frames to sum
+    int sum_update_interval_frames_;          // Update sum every N frames (configurable)
+    int frames_since_last_sum_update_;        // Counter for frames since last sum update
     std::vector<char> line_buffer_;
     size_t total_read_;
     
