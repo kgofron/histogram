@@ -48,7 +48,7 @@ record(bo, "$(P)$(R)SAVE_DATA") {
 }
 
 record(bo, "$(P)$(R)SAVE_SUM_DATA") {
-    field(DESC, "Save sum of N frames histogram data to file")
+    field(DESC, "Save sum of N frames to file")
     field(DTYP, "asynInt32")
     field(OUT, "@asyn($(PORT) $(ADDR))SAVE_SUM_DATA")
     field(ZNAM, "Ready")
@@ -248,17 +248,15 @@ record(longout, "$(P)$(R)FRAMES_TO_SUM") {
     field(DESC, "Number of frames to sum")
     field(DTYP, "asynInt32")
     field(OUT, "@asyn($(PORT) $(ADDR))FRAMES_TO_SUM")
-    field(PREC, "0")
     field(DRVL, "1")
     field(DRVH, "100000")
 }
 
 # Configuration for sum update interval (writable for runtime performance tuning)
 record(longout, "$(P)$(R)SUM_UPDATE_INTERVAL_FRAMES") {
-    field(DESC, "Update interval for sum computation (frames)")
+    field(DESC, "Sum update interval (frames)")
     field(DTYP, "asynInt32")
     field(OUT, "@asyn($(PORT) $(ADDR))SUM_UPDATE_INTERVAL_FRAMES")
-    field(PREC, "0")
     field(DRVL, "1")
     field(DRVH, "10000")
 }
