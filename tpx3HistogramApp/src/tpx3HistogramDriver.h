@@ -34,6 +34,7 @@
 
 // Network includes
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -230,6 +231,7 @@ private:
     int port_;
     bool connected_;
     bool running_;
+    bool reconnect_requested_;  // Flag to trigger reconnection (e.g., when HOST/PORT changes)
     std::unique_ptr<NetworkClient> network_client_;
     
     // Histogram data
@@ -291,6 +293,22 @@ private:
     // Memory usage calculation variables
     double last_memory_update_time_;
     static const size_t MEMORY_UPDATE_INTERVAL_SEC = 5;  // Update memory usage every 5 seconds
+    
+    // Connection logging rate limiting
+    int connection_attempt_count_;  // Counter for connection attempts
+    double last_connection_log_time_;  // Last time we logged a connection attempt
+    static const int CONNECTION_LOG_INTERVAL_ATTEMPTS = 10;  // Log every 10 attempts
+    static constexpr double CONNECTION_LOG_INTERVAL_SEC = 5.0;  // Or every 5 seconds, whichever comes first
+    
+    // SERVAL-specific reconnection configuration
+    static constexpr double SERVAL_RECONNECT_DELAY_SEC = 2.0;  // Delay before reconnection attempts (SERVAL may need time to reset)
+    static const int MAX_RECONNECT_ATTEMPTS = 10;  // Maximum reconnection attempts before giving up
+    bool auto_reconnect_enabled_;  // Enable/disable automatic reconnection
+    int max_reconnect_attempts_;  // Configurable max attempts
+    
+    // Helper methods
+    bool checkPortAvailable(const std::string& host, int port, double timeout_sec = 0.5);
+    std::string getConnectionErrorDescription(int errno_value, const std::string& host, int port);
     
     // Methods
     void workerThread();

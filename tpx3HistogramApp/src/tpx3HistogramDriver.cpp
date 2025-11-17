@@ -188,19 +188,46 @@ NetworkClient& NetworkClient::operator=(NetworkClient&& other) noexcept {
 }
 
 bool NetworkClient::connect(const std::string& host, int port) {
+    // Close existing connection if any
+    if (socket_fd_ >= 0) {
+        close(socket_fd_);
+        socket_fd_ = -1;
+    }
+    connected_ = false;
+    
     socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd_ < 0) {
         std::cerr << "Socket creation failed: " << strerror(errno) << std::endl;
         return false;
     }
 
-    // Set TCP_NODELAY to disable Nagle's algorithm
-    int flag = 1;
-    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+    // Enable TCP keepalive to detect dead connections
+    int opt = 1;
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Failed to set SO_KEEPALIVE: " << strerror(errno) << std::endl;
+    }
+    
+    // Configure TCP keepalive parameters (Linux-specific)
+    int keepidle = 5;   // Start sending keepalive probes after 5 seconds of idle
+    int keepintvl = 5;  // Send keepalive probes every 5 seconds
+    int keepcnt = 3;    // Send 3 probes before considering connection dead
+    
+    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0) {
+        // Not critical, continue if fails (some systems may not support this)
+    }
+    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0) {
+        // Not critical, continue if fails
+    }
+    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) < 0) {
+        // Not critical, continue if fails
+    }
+
+    // Set TCP_NODELAY to disable Nagle's algorithm for low latency
+    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0) {
         std::cerr << "Failed to set TCP_NODELAY: " << strerror(errno) << std::endl;
     }
 
-    // Set larger socket buffers
+    // Set larger socket buffers for better throughput
     int rcvbuf = 256 * 1024;  // 256KB receive buffer
     if (setsockopt(socket_fd_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) < 0) {
         std::cerr << "Failed to set receive buffer size: " << strerror(errno) << std::endl;
@@ -217,16 +244,17 @@ bool NetworkClient::connect(const std::string& host, int port) {
         return false;
     }
 
-    std::cout << "Attempting to connect to " << host << ":" << port << "..." << std::endl;
+    // Connection attempt logging is handled by caller with rate limiting
+    // Don't log here to avoid duplicate messages
     
     if (::connect(socket_fd_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        std::cerr << "Connection failed: " << strerror(errno) << std::endl;
+        // Error logging is handled by caller with rate limiting
         close(socket_fd_);
         socket_fd_ = -1;
         return false;
     }
     
-    std::cout << "Connected successfully" << std::endl;
+    // Success logging is handled by caller
     connected_ = true;
     return true;
 }
@@ -312,6 +340,91 @@ std::string createStatusMessage(const std::string& baseMessage, const std::strin
     return status;
 }
 
+// Helper function to check if port is available (for SERVAL diagnostics)
+bool tpx3HistogramDriver::checkPortAvailable(const std::string& host, int port, double timeout_sec) {
+    int test_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (test_socket < 0) {
+        return false;
+    }
+    
+    // Set socket to non-blocking mode
+    int flags = fcntl(test_socket, F_GETFL, 0);
+    if (flags < 0 || fcntl(test_socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+        close(test_socket);
+        return false;
+    }
+    
+    // Prepare server address
+    struct sockaddr_in server_addr{};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    
+    if (inet_pton(AF_INET, host.c_str(), &server_addr.sin_addr) <= 0) {
+        close(test_socket);
+        return false;
+    }
+    
+    // Attempt connection (non-blocking)
+    int result = ::connect(test_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    
+    if (result == 0) {
+        // Connected immediately
+        close(test_socket);
+        return true;
+    }
+    
+    if (errno != EINPROGRESS) {
+        // Connection failed immediately (port not listening)
+        close(test_socket);
+        return false;
+    }
+    
+    // Wait for connection with timeout using select
+    fd_set write_fds;
+    FD_ZERO(&write_fds);
+    FD_SET(test_socket, &write_fds);
+    
+    struct timeval timeout;
+    timeout.tv_sec = static_cast<long>(timeout_sec);
+    timeout.tv_usec = static_cast<long>((timeout_sec - timeout.tv_sec) * 1000000);
+    
+    int select_result = select(test_socket + 1, nullptr, &write_fds, nullptr, &timeout);
+    
+    if (select_result > 0 && FD_ISSET(test_socket, &write_fds)) {
+        // Check if connection succeeded
+        int so_error = 0;
+        socklen_t len = sizeof(so_error);
+        if (getsockopt(test_socket, SOL_SOCKET, SO_ERROR, &so_error, &len) == 0 && so_error == 0) {
+            close(test_socket);
+            return true;
+        }
+    }
+    
+    close(test_socket);
+    return false;
+}
+
+// Helper function to get detailed connection error description
+std::string tpx3HistogramDriver::getConnectionErrorDescription(int errno_value, const std::string& host, int port) {
+    switch (errno_value) {
+        case ECONNREFUSED:
+            return "Connection refused - SERVAL may not allow reconnection to existing stream. "
+                   "The stream may need to be restarted on SERVAL side.";
+        case ETIMEDOUT:
+            return "Connection timeout - SERVAL is not responding. "
+                   "Check if SERVAL is running and the port is correct.";
+        case EHOSTUNREACH:
+        case ENETUNREACH:
+            return "Host unreachable - Cannot reach " + host + ":" + std::to_string(port) + ". "
+                   "Check network connectivity.";
+        case EADDRINUSE:
+            return "Address already in use - Port " + std::to_string(port) + " is already in use.";
+        default:
+            return "Connection failed: " + std::string(strerror(errno_value)) + 
+                   " (errno=" + std::to_string(errno_value) + ")";
+    }
+}
+
 // Constructor
 tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     : asynPortDriver(portName, maxAddr,
@@ -322,6 +435,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       port_(DEFAULT_PORT),
       connected_(false),
       running_(false),
+      reconnect_requested_(false),
       network_client_(std::make_unique<NetworkClient>()),
       frame_count_(0),
       total_counts_(0),
@@ -351,7 +465,11 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
       last_rate_update_time_(0.0),
       processing_time_samples_(),
       last_processing_time_update_(0.0),
-      last_memory_update_time_(0.0)
+      last_memory_update_time_(0.0),
+      connection_attempt_count_(0),
+      last_connection_log_time_(0.0),
+      auto_reconnect_enabled_(true),
+      max_reconnect_attempts_(MAX_RECONNECT_ATTEMPTS)
 {
     // Create data directory
     std::filesystem::create_directories("data");
@@ -548,9 +666,14 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
             saveSumData(filename);
         }
     } else if (function == portIndex_) {
-        port_ = value;
-        setIntegerParam(portIndex_, value);
-        printf("Port set to %d\n", value);
+        epicsMutexLock(mutex_);
+        if (port_ != value) {
+            port_ = value;
+            setIntegerParam(portIndex_, value);
+            reconnect_requested_ = true;  // Trigger reconnection with new port
+            printf("Port set to %d (reconnection will be attempted)\n", value);
+        }
+        epicsMutexUnlock(mutex_);
     } else if (function == numberOfBinsIndex_) {
         number_of_bins_ = value;
         setIntegerParam(numberOfBinsIndex_, value);
@@ -592,9 +715,15 @@ asynStatus tpx3HistogramDriver::writeOctet(asynUser *pasynUser, const char *valu
     asynStatus status = asynSuccess;
     
     if (function == hostIndex_) {
-        host_ = std::string(value, maxChars);
-        setStringParam(hostIndex_, value);
-        printf("Host set to %s\n", host_.c_str());
+        epicsMutexLock(mutex_);
+        std::string new_host(value, maxChars);
+        if (host_ != new_host) {
+            host_ = new_host;
+            setStringParam(hostIndex_, value);
+            reconnect_requested_ = true;  // Trigger reconnection with new host
+            printf("Host set to %s (reconnection will be attempted)\n", host_.c_str());
+        }
+        epicsMutexUnlock(mutex_);
     } else if (function == filenameIndex_) {
         // Handle FILENAME as waveform record with CHAR type
         setStringParam(filenameIndex_, value);
@@ -783,26 +912,40 @@ void tpx3HistogramDriver::connect()
 {
     epicsMutexLock(mutex_);
     
-    if (!connected_) {
-        status_ = createStatusMessage("Connecting to server", host_, port_);
-        setStringParam(statusIndex_, status_.c_str());
-        callParamCallbacks();
-        
-        if (network_client_->connect(host_, port_)) {
-            connected_ = true;
-            status_ = createStatusMessage("Connected successfully", host_, port_);
-            setIntegerParam(connectedIndex_, 1);
+    // Set reconnect_requested_ flag to trigger reconnection in worker thread
+    // The worker thread will handle the actual connection attempt
+    reconnect_requested_ = true;
+    
+    if (!running_) {
+        // If not running, try to connect immediately
+        if (!connected_) {
+            status_ = createStatusMessage("Connecting to server", host_, port_);
             setStringParam(statusIndex_, status_.c_str());
-            callParamCallbacks(statusIndex_);
-            printf("Updated STATUS to: '%s'\n", status_.c_str());
-            printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+            callParamCallbacks();
+            
+            if (network_client_->connect(host_, port_)) {
+                connected_ = true;
+                reconnect_requested_ = false;  // Clear flag after successful connection
+                status_ = createStatusMessage("Connected successfully", host_, port_);
+                setIntegerParam(connectedIndex_, 1);
+                setStringParam(statusIndex_, status_.c_str());
+                callParamCallbacks(statusIndex_);
+                printf("Connected to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+            } else {
+                // Keep reconnect_requested_ = true so worker thread can retry if started later
+                status_ = createStatusMessage("Connection failed", host_, port_, 0, 0, ++error_count_);
+                setStringParam(statusIndex_, status_.c_str());
+                callParamCallbacks(statusIndex_);
+                setIntegerParam(errorCountIndex_, error_count_);
+                printf("Failed to connect to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+            }
         } else {
-            status_ = createStatusMessage("Connection failed", host_, port_, 0, 0, ++error_count_);
-            setStringParam(statusIndex_, status_.c_str());
-            callParamCallbacks(statusIndex_);
-            setIntegerParam(errorCountIndex_, error_count_);
-            printf("Failed to connect to Timepix3 server at %s:%d\n", host_.c_str(), port_);
+            // Already connected, clear the flag
+            reconnect_requested_ = false;
         }
+    } else {
+        // If running, worker thread will handle reconnection
+        printf("Reconnection requested, worker thread will handle it\n");
     }
     
     epicsMutexUnlock(mutex_);
@@ -857,6 +1000,11 @@ void tpx3HistogramDriver::start()
     epicsMutexLock(mutex_);
     
     if (connected_ && !running_) {
+        // Clear reconnect_requested_ flag when starting if already connected
+        // This prevents unnecessary disconnection/reconnection when starting acquisition
+        reconnect_requested_ = false;
+        connection_attempt_count_ = 0;  // Reset connection attempt counter
+        
         running_ = true;
         status_ = createStatusMessage("Acquisition started", host_, port_, frame_count_, total_counts_);
         setStringParam(statusIndex_, status_.c_str());
@@ -869,6 +1017,12 @@ void tpx3HistogramDriver::start()
                                           this);
         
         printf("Started histogram acquisition\n");
+    } else if (!connected_) {
+        // If not connected, don't start acquisition
+        status_ = createStatusMessage("Cannot start acquisition - not connected to server", host_, port_);
+        setStringParam(statusIndex_, status_.c_str());
+        callParamCallbacks();
+        printf("Cannot start acquisition - not connected to server. Please connect first.\n");
     }
     
     epicsMutexUnlock(mutex_);
@@ -1013,8 +1167,65 @@ void tpx3HistogramDriver::saveSumData(const std::string& filename)
 // Thread methods
 void tpx3HistogramDriver::workerThread()
 {
+    const double RECONNECT_DELAY_SEC = 0.1;  // 100ms delay between reconnection attempts
+    
     while (running_) {
-        if (connected_ && network_client_->is_connected()) {
+        epicsMutexLock(mutex_);
+        bool need_reconnect = reconnect_requested_ || !connected_;
+        std::string current_host = host_;
+        int current_port = port_;
+        epicsMutexUnlock(mutex_);
+        
+        // Handle reconnection if needed
+        if (need_reconnect) {
+            epicsMutexLock(mutex_);
+            if (reconnect_requested_) {
+                // Disconnect existing connection if any
+                if (connected_) {
+                    network_client_->disconnect();
+                    connected_ = false;
+                    setIntegerParam(connectedIndex_, 0);
+                    printf("Disconnecting for reconnection (HOST/PORT changed)\n");
+                }
+                reconnect_requested_ = false;
+            }
+            epicsMutexUnlock(mutex_);
+            
+            // Try to connect
+            epicsMutexLock(mutex_);
+            status_ = createStatusMessage("Connecting to server", current_host, current_port);
+            setStringParam(statusIndex_, status_.c_str());
+            callParamCallbacks();
+            epicsMutexUnlock(mutex_);
+            
+            if (network_client_->connect(current_host, current_port)) {
+                epicsMutexLock(mutex_);
+                connected_ = true;
+                status_ = createStatusMessage("Connected successfully", current_host, current_port);
+                setIntegerParam(connectedIndex_, 1);
+                setStringParam(statusIndex_, status_.c_str());
+                callParamCallbacks();
+                printf("Connected to Timepix3 server at %s:%d\n", current_host.c_str(), current_port);
+                epicsMutexUnlock(mutex_);
+            } else {
+                epicsMutexLock(mutex_);
+                connected_ = false;
+                setIntegerParam(connectedIndex_, 0);
+                status_ = createStatusMessage("Connection failed, retrying...", current_host, current_port, frame_count_, total_counts_, ++error_count_);
+                setStringParam(statusIndex_, status_.c_str());
+                setIntegerParam(errorCountIndex_, error_count_);
+                callParamCallbacks();
+                printf("Failed to connect to Timepix3 server at %s:%d, will retry...\n", current_host.c_str(), current_port);
+                epicsMutexUnlock(mutex_);
+                
+                // Wait before retrying
+                epicsThreadSleep(RECONNECT_DELAY_SEC);
+                continue;
+            }
+        }
+        
+        // Connected, now read data
+        if (connected_) {
             try {
                 ssize_t bytes_read = network_client_->receive(
                     line_buffer_.data() + total_read_, 
@@ -1023,14 +1234,56 @@ void tpx3HistogramDriver::workerThread()
 
                 if (bytes_read <= 0) {
                     if (bytes_read == 0) {
-                        printf("Connection closed by peer\n");
+                        // Connection closed by peer - rate-limited logging
+                        epicsTimeStamp current_time;
+                        epicsTimeGetCurrent(&current_time);
+                        double current_time_seconds = current_time.secPastEpoch + current_time.nsec / 1e9;
+                        
+                        epicsMutexLock(mutex_);
+                        bool should_log_error = (current_time_seconds - last_connection_log_time_ >= CONNECTION_LOG_INTERVAL_SEC);
+                        if (should_log_error) {
+                            last_connection_log_time_ = current_time_seconds;
+                        }
                         connected_ = false;
                         setIntegerParam(connectedIndex_, 0);
-                        status_ = createStatusMessage("Connection closed by peer", host_, port_, frame_count_, total_counts_, ++error_count_);
+                        status_ = createStatusMessage("Connection closed by peer, reconnecting...", host_, port_, frame_count_, total_counts_, ++error_count_);
                         setStringParam(statusIndex_, status_.c_str());
                         setIntegerParam(errorCountIndex_, error_count_);
+                        callParamCallbacks();
+                        epicsMutexUnlock(mutex_);
+                        
+                        if (should_log_error) {
+                            printf("Connection closed by peer, will attempt to reconnect\n");
+                        }
+                    } else {
+                        // Error occurred, will reconnect on next iteration - rate-limited logging
+                        epicsTimeStamp current_time;
+                        epicsTimeGetCurrent(&current_time);
+                        double current_time_seconds = current_time.secPastEpoch + current_time.nsec / 1e9;
+                        
+                        epicsMutexLock(mutex_);
+                        bool should_log_error = false;
+                        if (connected_) {  // Only log if we thought we were connected
+                            should_log_error = (current_time_seconds - last_connection_log_time_ >= CONNECTION_LOG_INTERVAL_SEC);
+                            if (should_log_error) {
+                                last_connection_log_time_ = current_time_seconds;
+                            }
+                            connected_ = false;
+                            setIntegerParam(connectedIndex_, 0);
+                            status_ = createStatusMessage("Socket error, reconnecting...", host_, port_, frame_count_, total_counts_, ++error_count_);
+                            setStringParam(statusIndex_, status_.c_str());
+                            setIntegerParam(errorCountIndex_, error_count_);
+                            callParamCallbacks();
+                        }
+                        epicsMutexUnlock(mutex_);
+                        
+                        if (should_log_error) {
+                            printf("Socket error: %s (will attempt to reconnect)\n", strerror(errno));
+                        }
                     }
-                    break;
+                    // Continue loop to attempt reconnection
+                    epicsThreadSleep(RECONNECT_DELAY_SEC);
+                    continue;
                 }
                 
                 // printf("DEBUG: Received %zd bytes\n", bytes_read);
@@ -1068,19 +1321,24 @@ void tpx3HistogramDriver::workerThread()
                 // Update status periodically to show activity
                 static int status_counter = 0;
                 if (++status_counter % 100 == 0) {  // Update every 100 iterations
+                    epicsMutexLock(mutex_);
                     status_ = createStatusMessage("Processing data", host_, port_, frame_count_, total_counts_);
                     setStringParam(statusIndex_, status_.c_str());
+                    epicsMutexUnlock(mutex_);
                 }
                 
             } catch (const std::exception& e) {
                 printf("Error in worker thread: %s\n", e.what());
+                epicsMutexLock(mutex_);
                 error_count_++;
                 setIntegerParam(errorCountIndex_, error_count_);
                 status_ = createStatusMessage("Processing error: " + std::string(e.what()), host_, port_, frame_count_, total_counts_, error_count_);
                 setStringParam(statusIndex_, status_.c_str());
+                callParamCallbacks();
+                epicsMutexUnlock(mutex_);
             }
         } else {
-            epicsThreadSleep(0.1); // Short sleep when not connected
+            epicsThreadSleep(RECONNECT_DELAY_SEC); // Short sleep when not connected
         }
     }
 }
