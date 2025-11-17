@@ -208,9 +208,10 @@ bool NetworkClient::connect(const std::string& host, int port) {
     }
     
     // Configure TCP keepalive parameters (Linux-specific)
-    int keepidle = 5;   // Start sending keepalive probes after 5 seconds of idle
-    int keepintvl = 5;  // Send keepalive probes every 5 seconds
-    int keepcnt = 3;    // Send 3 probes before considering connection dead
+    // Use conservative settings for stable connection with physical detector
+    int keepidle = 60;   // Start sending keepalive probes after 60 seconds of idle (less aggressive)
+    int keepintvl = 10;  // Send keepalive probes every 10 seconds
+    int keepcnt = 3;     // Send 3 probes before considering connection dead
     
     if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0) {
         // Not critical, continue if fails (some systems may not support this)
@@ -223,14 +224,23 @@ bool NetworkClient::connect(const std::string& host, int port) {
     }
 
     // Set TCP_NODELAY to disable Nagle's algorithm for low latency
-    if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0) {
-        std::cerr << "Failed to set TCP_NODELAY: " << strerror(errno) << std::endl;
-    }
+    // Note: Disabled for physical detector stability - may cause issues with some hardware
+    // if (setsockopt(socket_fd_, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0) {
+    //     std::cerr << "Failed to set TCP_NODELAY: " << strerror(errno) << std::endl;
+    // }
 
-    // Set larger socket buffers for better throughput
-    int rcvbuf = 256 * 1024;  // 256KB receive buffer
+    // Set moderate socket buffers for stability (reduced from 256KB)
+    int rcvbuf = 64 * 1024;  // 64KB receive buffer (more conservative for stability)
     if (setsockopt(socket_fd_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) < 0) {
         std::cerr << "Failed to set receive buffer size: " << strerror(errno) << std::endl;
+    }
+    
+    // Set SO_LINGER to ensure clean connection closure
+    struct linger linger_opt;
+    linger_opt.l_onoff = 1;
+    linger_opt.l_linger = 5;  // Wait up to 5 seconds for data to be sent
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)) < 0) {
+        // Not critical, continue if fails
     }
 
     struct sockaddr_in server_addr{};
@@ -1171,12 +1181,14 @@ void tpx3HistogramDriver::workerThread()
     
     while (running_) {
         epicsMutexLock(mutex_);
-        bool need_reconnect = reconnect_requested_ || !connected_;
+        // Only reconnect if explicitly requested (HOST/PORT change), not on connection loss
+        // This prioritizes stability - if connection is lost, stop acquisition and require manual reconnect
+        bool need_reconnect = reconnect_requested_;
         std::string current_host = host_;
         int current_port = port_;
         epicsMutexUnlock(mutex_);
         
-        // Handle reconnection if needed
+        // Handle reconnection if needed (only for explicit requests, not connection loss)
         if (need_reconnect) {
             epicsMutexLock(mutex_);
             if (reconnect_requested_) {
@@ -1224,6 +1236,25 @@ void tpx3HistogramDriver::workerThread()
             }
         }
         
+        // Check if we're connected before trying to read
+        // If not connected and not reconnecting, exit thread (connection was lost)
+        epicsMutexLock(mutex_);
+        bool is_connected = connected_;
+        epicsMutexUnlock(mutex_);
+        
+        if (!is_connected) {
+            // Not connected and not trying to reconnect - connection was lost
+            // Stop acquisition and exit thread for stability
+            epicsMutexLock(mutex_);
+            running_ = false;
+            status_ = createStatusMessage("Connection lost - acquisition stopped", host_, port_, frame_count_, total_counts_, error_count_);
+            setStringParam(statusIndex_, status_.c_str());
+            callParamCallbacks();
+            epicsMutexUnlock(mutex_);
+            printf("Connection lost - acquisition stopped. Please reconnect manually.\n");
+            break;
+        }
+        
         // Connected, now read data
         if (connected_) {
             try {
@@ -1234,56 +1265,37 @@ void tpx3HistogramDriver::workerThread()
 
                 if (bytes_read <= 0) {
                     if (bytes_read == 0) {
-                        // Connection closed by peer - rate-limited logging
-                        epicsTimeStamp current_time;
-                        epicsTimeGetCurrent(&current_time);
-                        double current_time_seconds = current_time.secPastEpoch + current_time.nsec / 1e9;
-                        
+                        // Connection closed by peer - stop acquisition for stability
                         epicsMutexLock(mutex_);
-                        bool should_log_error = (current_time_seconds - last_connection_log_time_ >= CONNECTION_LOG_INTERVAL_SEC);
-                        if (should_log_error) {
-                            last_connection_log_time_ = current_time_seconds;
-                        }
                         connected_ = false;
                         setIntegerParam(connectedIndex_, 0);
-                        status_ = createStatusMessage("Connection closed by peer, reconnecting...", host_, port_, frame_count_, total_counts_, ++error_count_);
+                        running_ = false;  // Stop acquisition when connection is lost
+                        status_ = createStatusMessage("Connection closed by peer - acquisition stopped", host_, port_, frame_count_, total_counts_, ++error_count_);
                         setStringParam(statusIndex_, status_.c_str());
                         setIntegerParam(errorCountIndex_, error_count_);
                         callParamCallbacks();
                         epicsMutexUnlock(mutex_);
                         
-                        if (should_log_error) {
-                            printf("Connection closed by peer, will attempt to reconnect\n");
-                        }
+                        printf("Connection closed by peer - acquisition stopped. Please reconnect manually.\n");
+                        // Exit worker thread - no automatic reconnection for stability
+                        break;
                     } else {
-                        // Error occurred, will reconnect on next iteration - rate-limited logging
-                        epicsTimeStamp current_time;
-                        epicsTimeGetCurrent(&current_time);
-                        double current_time_seconds = current_time.secPastEpoch + current_time.nsec / 1e9;
-                        
+                        // Error occurred - stop acquisition for stability
                         epicsMutexLock(mutex_);
-                        bool should_log_error = false;
-                        if (connected_) {  // Only log if we thought we were connected
-                            should_log_error = (current_time_seconds - last_connection_log_time_ >= CONNECTION_LOG_INTERVAL_SEC);
-                            if (should_log_error) {
-                                last_connection_log_time_ = current_time_seconds;
-                            }
+                        if (connected_) {  // Only handle if we thought we were connected
                             connected_ = false;
                             setIntegerParam(connectedIndex_, 0);
-                            status_ = createStatusMessage("Socket error, reconnecting...", host_, port_, frame_count_, total_counts_, ++error_count_);
+                            running_ = false;  // Stop acquisition when connection error occurs
+                            status_ = createStatusMessage("Socket error - acquisition stopped", host_, port_, frame_count_, total_counts_, ++error_count_);
                             setStringParam(statusIndex_, status_.c_str());
                             setIntegerParam(errorCountIndex_, error_count_);
                             callParamCallbacks();
+                            printf("Socket error: %s - acquisition stopped. Please reconnect manually.\n", strerror(errno));
                         }
                         epicsMutexUnlock(mutex_);
-                        
-                        if (should_log_error) {
-                            printf("Socket error: %s (will attempt to reconnect)\n", strerror(errno));
-                        }
+                        // Exit worker thread - no automatic reconnection for stability
+                        break;
                     }
-                    // Continue loop to attempt reconnection
-                    epicsThreadSleep(RECONNECT_DELAY_SEC);
-                    continue;
                 }
                 
                 // printf("DEBUG: Received %zd bytes\n", bytes_read);
