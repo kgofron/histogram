@@ -371,6 +371,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     createParam("RESET", asynParamInt32, &resetIndex_);
     createParam("ACQUISITION_STATE", asynParamInt32, &acquisitionStateIndex_);
     createParam("SAVE_DATA", asynParamInt32, &saveDataIndex_);
+    createParam("SAVE_SUM_DATA", asynParamInt32, &saveSumDataIndex_);
     createParam("HOST", asynParamOctet, &hostIndex_);
     createParam("PORT", asynParamInt32, &portIndex_);
     createParam("FRAME_COUNT", asynParamInt32, &frameCountIndex_);
@@ -414,6 +415,7 @@ tpx3HistogramDriver::tpx3HistogramDriver(const char *portName, int maxAddr)
     printf("  RESET=%d\n", resetIndex_);
     printf("  ACQUISITION_STATE=%d\n", acquisitionStateIndex_);
     printf("  SAVE_DATA=%d\n", saveDataIndex_);
+    printf("  SAVE_SUM_DATA=%d\n", saveSumDataIndex_);
     printf("  HOST=%d\n", hostIndex_);
     printf("  PORT=%d\n", portIndex_);
     printf("  FRAME_COUNT=%d\n", frameCountIndex_);
@@ -537,6 +539,13 @@ asynStatus tpx3HistogramDriver::writeInt32(asynUser *pasynUser, epicsInt32 value
             char filename[256];
             getStringParam(filenameIndex_, sizeof(filename), filename);
             saveData(filename);
+        }
+    } else if (function == saveSumDataIndex_) {
+        if (value == 1) {
+            // Get filename from parameter
+            char filename[256];
+            getStringParam(filenameIndex_, sizeof(filename), filename);
+            saveSumData(filename);
         }
     } else if (function == portIndex_) {
         port_ = value;
@@ -907,6 +916,98 @@ void tpx3HistogramDriver::saveData(const std::string& filename)
     epicsMutexUnlock(mutex_);
     callParamCallbacks();
     printf("Histogram data saved to %s\n", filename.c_str());
+}
+
+void tpx3HistogramDriver::saveSumData(const std::string& filename)
+{
+    epicsMutexLock(mutex_);
+    
+    if (frame_buffer_.empty()) {
+        status_ = createStatusMessage("No sum data to save (frame buffer empty)", host_, port_, frame_count_, total_counts_);
+        setStringParam(statusIndex_, status_.c_str());
+        epicsMutexUnlock(mutex_);
+        callParamCallbacks();
+        printf("No sum data to save (frame buffer empty)\n");
+        return;
+    }
+    
+    // Get bin size from first frame in buffer
+    size_t bin_size = frame_buffer_[0].get_bin_size();
+    
+    // Compute sum of all frames in buffer
+    std::vector<uint64_t> sum_array_64(bin_size, 0);
+    for (const auto& buffered_frame : frame_buffer_) {
+        if (buffered_frame.get_bin_size() == bin_size) {
+            for (size_t i = 0; i < bin_size; ++i) {
+                sum_array_64[i] += buffered_frame.get_bin_value_32(i);
+            }
+        }
+    }
+    
+    // Unlock mutex before file I/O (file operations can be slow)
+    epicsMutexUnlock(mutex_);
+    
+    // Save to file
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        printf("Failed to open file: %s\n", filename.c_str());
+        epicsMutexLock(mutex_);
+        status_ = createStatusMessage("Failed to open file: " + filename, host_, port_, frame_count_, total_counts_);
+        setStringParam(statusIndex_, status_.c_str());
+        epicsMutexUnlock(mutex_);
+        callParamCallbacks();
+        return;
+    }
+    
+    file << "# Time of Flight Histogram Data - Sum of Last N Frames\n";
+    file << "# Bins: " << bin_size << "\n";
+    epicsMutexLock(mutex_);
+    file << "# Frames summed: " << frame_buffer_.size() << "\n";
+    epicsMutexUnlock(mutex_);
+    file << "# Time units: milliseconds (ms)\n";
+    file << "# Count units: events\n";
+    file << "# Format: time_ms\tcount\n";
+    file << "#\n";
+    
+    for (size_t i = 0; i < bin_size; ++i) {
+        double bin_time_ms = 0.0;
+        epicsMutexLock(mutex_);
+        if (i < histogram_time_data_.size()) {
+            bin_time_ms = histogram_time_data_[i];
+        } else {
+            // Fallback calculation if histogram_time_data_ is not available
+            bin_time_ms = (frame_bin_offset_ + i * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
+        }
+        epicsMutexUnlock(mutex_);
+        
+        file << std::scientific << std::setprecision(9) 
+             << bin_time_ms << "\t" 
+             << sum_array_64[i] << "\n";
+    }
+    
+    // Write last bin edge
+    double last_bin_time_ms = 0.0;
+    epicsMutexLock(mutex_);
+    if (bin_size < histogram_time_data_.size()) {
+        last_bin_time_ms = histogram_time_data_[bin_size];
+    } else {
+        // Fallback calculation
+        last_bin_time_ms = (frame_bin_offset_ + bin_size * frame_bin_width_) * TPX3_TDC_CLOCK_PERIOD_SEC * 1e3;
+    }
+    epicsMutexUnlock(mutex_);
+    
+    file << std::scientific << std::setprecision(9) 
+         << last_bin_time_ms << "\t" 
+         << "0\n";
+    
+    file.close();
+    
+    epicsMutexLock(mutex_);
+    status_ = createStatusMessage("Sum data saved to " + filename, host_, port_, frame_count_, total_counts_);
+    setStringParam(statusIndex_, status_.c_str());
+    epicsMutexUnlock(mutex_);
+    callParamCallbacks();
+    printf("Sum of N frames data saved to %s\n", filename.c_str());
 }
 
 // Thread methods

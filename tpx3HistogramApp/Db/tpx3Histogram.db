@@ -47,6 +47,14 @@ record(bo, "$(P)$(R)SAVE_DATA") {
     field(ONAM, "Save")
 }
 
+record(bo, "$(P)$(R)SAVE_SUM_DATA") {
+    field(DESC, "Save sum of N frames histogram data to file")
+    field(DTYP, "asynInt32")
+    field(OUT, "@asyn($(PORT) $(ADDR))SAVE_SUM_DATA")
+    field(ZNAM, "Ready")
+    field(ONAM, "Save")
+}
+
 record(stringin, "$(P)$(R)HOST") {
     field(DESC, "Timepix3 server hostname/IP")
     field(DTYP, "asynOctetRead")

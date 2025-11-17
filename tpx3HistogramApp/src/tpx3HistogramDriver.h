@@ -180,6 +180,7 @@ public:
     void start();
     void stop();
     void saveData(const std::string& filename);
+    void saveSumData(const std::string& filename);
     
     // Status methods
     bool isConnected() const { return connected_; }
@@ -193,6 +194,7 @@ private:
     int resetIndex_;
     int acquisitionStateIndex_;
     int saveDataIndex_;
+    int saveSumDataIndex_;  // Save sum of N frames to file
     int hostIndex_;
     int portIndex_;
     int frameCountIndex_;
