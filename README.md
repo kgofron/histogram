@@ -164,6 +164,17 @@ This histogram IOC is designed to work with Serval TPX3 cameras. The communicati
 2. Start histogram IOC (connects as client)
 3. Use EPICS PVs to control and monitor the histogram
 
+### SERVAL Connection Behavior
+
+**Connection Stability**: The IOC uses a simple, stable socket connection approach that maintains connections reliably during normal operation.
+
+**Automatic Reconnection**: The IOC includes automatic reconnection logic that:
+- Automatically reconnects if the connection is lost during acquisition
+- Retries connection attempts with a 100ms delay between attempts
+- Handles connection state transitions smoothly
+
+**Note on SERVAL Reconnection**: If you manually disconnect from SERVAL and need to reconnect, SERVAL may require the stream to be restarted on the SERVAL side before accepting new connections. This is a SERVAL behavior, not an IOC limitation.
+
 ### Default Configuration
 The histogram IOC is pre-configured to connect to:
 - Host: `127.0.0.1` (localhost)
@@ -197,6 +208,28 @@ The IOC expects the same data format as the original code:
 Followed by binary histogram data (32-bit integers in network byte order).
 
 ## Troubleshooting
+
+### Connection Issues
+
+#### Connection reset or connection refused
+**Symptom**: Connection is reset or refused when starting acquisition or during operation
+
+**Solutions**:
+1. Verify SERVAL is running and the histogram stream is active
+2. Check SERVAL configuration: Ensure `tcp://listen@localhost:8451` is set correctly
+3. Verify network connectivity: `netstat -an | grep 8451` or `ss -an | grep 8451`
+4. Check SERVAL logs for connection errors
+5. If manually disconnected, restart the histogram stream on SERVAL side before reconnecting
+
+#### Cannot start acquisition
+**Symptom**: "Cannot start acquisition - not connected to server"
+
+**Cause**: The IOC is not connected to SERVAL.
+
+**Solutions**:
+1. Connect to SERVAL first using the `CONNECTION_STATE` PV
+2. Verify SERVAL is running and accepting connections
+3. Check HOST and PORT configuration
 
 ### Build Issues
 - Ensure EPICS_BASE is set correctly
